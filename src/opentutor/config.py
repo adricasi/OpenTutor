@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     call_timeout_s: float = 120.0
     queue_update_s: float = 5.0
 
+    # Teacher view (REQ-013): on the hub laptop only unless allowed (ASSUMPTION A-6).
+    teacher_from_network: bool = False
+
     tutors_dir: Path = PACKAGE_DIR / "tutors"
     prompts_dir: Path = PACKAGE_DIR / "prompts"
 
