@@ -28,7 +28,9 @@ def bind(address: str, port: int) -> socket.socket:
     return sock
 
 
-def serve(app: FastAPI, host: str, port: int) -> None:
+def serve(app: FastAPI, host: str, port: int, tunnel_port: int | None = None) -> None:
     sockets = [bind(address, port) for address in listen_addresses(host)]
+    if tunnel_port:  # online demo: cloudflared forwards here; every request on it is remote
+        sockets.append(bind("127.0.0.1", tunnel_port))
     config = uvicorn.Config(app, workers=1, log_level="warning")
     uvicorn.Server(config).run(sockets=sockets)

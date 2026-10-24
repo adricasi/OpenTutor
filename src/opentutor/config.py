@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     # Teacher view (REQ-013): on the hub laptop only unless allowed (ASSUMPTION A-6).
     teacher_from_network: bool = False
 
+    # Optional online demo link (REQ-017): off by default; the tunnel gets its own listener.
+    online_demo: bool = False
+    tunnel_port: int = 8001
+
     tutors_dir: Path = PACKAGE_DIR / "tutors"
     prompts_dir: Path = PACKAGE_DIR / "prompts"
 
