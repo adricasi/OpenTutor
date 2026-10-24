@@ -532,8 +532,13 @@
   const dictation = (function () {
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const buttons = document.querySelectorAll("[data-speak]");
+    // A recogniser that never starts (no speech service, a permission prompt left open, no
+    // network) fires no event at all; without this the page would say "Listening…" forever.
+    const START_TIMEOUT_MS = 8000;
     let recognition = null;
     let listening = false;
+    let started = false;
+    let watchdog = 0;
     let told = false;
     try { told = window.sessionStorage.getItem("ot-speak-told") === "1"; } catch (e) { told = false; }
 
@@ -558,6 +563,18 @@
       notice("Tap the microphone on your keyboard to speak, then check the words and send.");
     }
 
+    // Drop the current recogniser without waiting for its events.
+    function abandon() {
+      window.clearTimeout(watchdog);
+      const r = recognition;
+      recognition = null;
+      if (r) {
+        r.onaudiostart = r.onresult = r.onerror = r.onend = null;
+        try { r.abort(); } catch (e) { /* never started */ }
+      }
+      setListening(false);
+    }
+
     function toggle() {
       if (busyNow) return;
       if (!told) {
@@ -565,26 +582,41 @@
         try { window.sessionStorage.setItem("ot-speak-told", "1"); } catch (e) { /* private mode */ }
         notice("Your phone turns your voice into text (on some phones that uses the internet). OpenTutor never records your voice.");
       }
-      if (listening && recognition) { recognition.stop(); return; }
-      if (!Recognition) { keyboardInstead(); return; }
+      if (listening && recognition) {
+        if (started) recognition.stop();
+        else abandon();
+        return;
+      }
+      // Browsers only give a plain-HTTP page (the hub Wi-Fi) the microphone through the keyboard.
+      if (!Recognition || !window.isSecureContext) { keyboardInstead(); return; }
       recognition = new Recognition();
+      started = false;
       recognition.lang = /^en/i.test(navigator.language || "") ? navigator.language : "en-GB";
       recognition.interimResults = true;
       recognition.continuous = false;
       const before = text.value.trim() ? text.value.trim() + " " : "";
+      recognition.onaudiostart = () => { started = true; window.clearTimeout(watchdog); };
       recognition.onresult = (e) => {
+        started = true;
         let words = "";
         for (let i = 0; i < e.results.length; i++) words += e.results[i][0].transcript;
         text.value = (before + words).slice(0, 2000);
         updateCount();
       };
       recognition.onerror = (e) => {
-        setListening(false);
+        abandon();
         if (e.error === "no-speech") notice("I didn’t hear anything. Tap the microphone and try again.");
         else if (e.error !== "aborted") keyboardInstead();
       };
-      recognition.onend = () => { setListening(false); if (text.value.trim()) text.focus(); };
-      try { recognition.start(); setListening(true); } catch (e) { keyboardInstead(); }
+      recognition.onend = () => { abandon(); if (text.value.trim()) text.focus(); };
+      try {
+        recognition.start();
+        setListening(true);
+        watchdog = window.setTimeout(() => { abandon(); keyboardInstead(); }, START_TIMEOUT_MS);
+      } catch (e) {
+        abandon();
+        keyboardInstead();
+      }
     }
 
     buttons.forEach((b) => b.addEventListener("click", toggle));

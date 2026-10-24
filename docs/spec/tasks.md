@@ -301,7 +301,11 @@ person). Everything else continues after the deadline.
   - Follow-up: on-hub speech-to-text so speaking works offline on every phone.
   - Status: Built (#23): browser tests with stubbed speech APIs pass (speech fills the box,
     blocked or missing recognition falls back to the keyboard microphone, Listen shown without an
-    offline voice and never uses an online one). Left: real phones.
+    offline voice and never uses an online one). Fix: a plain-HTTP page goes straight to the
+    keyboard microphone, and a recogniser that never starts falls back after 8 s instead of
+    "Listening…" forever. Left: real phones.
+  - Follow-up note: on-hub speech-to-text also needs a secure page (browsers only give the
+    microphone to HTTPS or localhost), so it depends on serving the hub over HTTPS on the LAN.
 
 ## Coverage check
 | Requirement | Tasks |

@@ -23,7 +23,7 @@ def speak(hub_url: str, mode: str) -> dict:  # type: ignore[type-arg]  # noqa: F
         ["node", str(SCRIPT), hub_url, mode],  # noqa: S607
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=90,
         check=True,
     )
     return json.loads(done.stdout.strip().splitlines()[-1])  # type: ignore[no-any-return]
@@ -39,11 +39,26 @@ def test_ac_020_2_speech_fills_the_box_for_checking(hub_url: str) -> None:  # no
     assert result["errors"] == []
 
 
-@pytest.mark.parametrize("mode", ["blocked", "missing"])
+@pytest.mark.parametrize("mode", ["blocked", "missing", "insecure", "silent"])
 def test_ac_020_3_falls_back_to_keyboard_dictation(hub_url: str, mode: str) -> None:  # noqa: F811
     result = speak(hub_url, mode)
     assert any("microphone on your keyboard" in n for n in result["notices"])
     assert result["focused"] == "text"
+    assert not result["listeningAfter"]  # "silent": the recogniser never started
+    assert result["text"] == ""
+    assert result["errors"] == []
+
+
+def test_ac_020_3_plain_http_page_never_starts_recognition(hub_url: str) -> None:  # noqa: F811
+    result = speak(hub_url, "insecure")
+    assert not result["secure"]
+    assert not result["listeningSoon"]
+
+
+def test_ac_020_2_tapping_again_stops_a_recogniser_that_never_started(hub_url: str) -> None:  # noqa: F811
+    result = speak(hub_url, "silent-stop")
+    assert result["listeningSoon"]
+    assert not result["listeningAfter"]
     assert result["errors"] == []
 
 
