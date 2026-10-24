@@ -4,24 +4,17 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import ipaddress
 import logging
 import socket
 import sys
 
 import segno
-import uvicorn
 
 from .app import create_app
 from .config import Settings
 from .model import OllamaModel
-
-
-def is_loopback(host: str) -> bool:
-    try:
-        return ipaddress.ip_address(host).is_loopback
-    except ValueError:
-        return host == "localhost"
+from .serve import is_loopback, serve
+from .setup import setup
 
 
 def ollama_exposed(host: str, port: int = 11434) -> bool:
@@ -63,7 +56,10 @@ def main(argv: list[str] | None = None) -> int:
     start.add_argument("--host", help="address to listen on (the hotspot IP, e.g. 10.42.0.1)")
     start.add_argument("--port", type=int)
     start.add_argument("--dev", action="store_true", help="fake model, localhost only")
+    sub.add_parser("setup", help="download the configured model and pin its digest")
     args = parser.parse_args(argv)
+    if args.command == "setup":
+        return setup(Settings().model)
 
     overrides: dict[str, object] = {}
     if args.host:
@@ -85,9 +81,7 @@ def main(argv: list[str] | None = None) -> int:
     segno.make(url, error="m").terminal(compact=True, border=2)
     print(f"\n  OpenTutor is ready. Students: join the hub Wi-Fi and open {url}")
     print(f"  Model: {settings.model if settings.model_backend == 'ollama' else 'fake (dev)'}\n")
-    uvicorn.run(
-        create_app(settings), host=settings.host, port=settings.port, workers=1, log_level="warning"
-    )
+    serve(create_app(settings), settings.host, settings.port)
     return 0
 
 

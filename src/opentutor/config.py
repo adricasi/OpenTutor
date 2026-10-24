@@ -3,13 +3,19 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+    TomlConfigSettingsSource,
+)
 
 PACKAGE_DIR = Path(__file__).parent
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="OPENTUTOR_", env_file=None)
+    # Precedence: OPENTUTOR_* environment variables > opentutor.toml (written by setup) > defaults.
+    model_config = SettingsConfigDict(env_prefix="OPENTUTOR_", toml_file="opentutor.toml")
 
     # Network (NFR-001): never 0.0.0.0. On a NetworkManager hotspot the hub is usually 10.42.0.1.
     host: str = "127.0.0.1"
@@ -38,3 +44,14 @@ class Settings(BaseSettings):
 
     tutors_dir: Path = PACKAGE_DIR / "tutors"
     prompts_dir: Path = PACKAGE_DIR / "prompts"
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,  # noqa: ARG003
+        file_secret_settings: PydanticBaseSettingsSource,  # noqa: ARG003
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return init_settings, env_settings, TomlConfigSettingsSource(settings_cls)
