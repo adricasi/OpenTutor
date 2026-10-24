@@ -70,15 +70,15 @@ flowchart LR
 | Pages and client script | Join, subject list, chat, teacher pages; camera/gallery input; client-side image downscale; streaming reader; quick actions; queue position; read aloud with on-device voices (D-10) | Jinja2 templates, one CSS file, one vanilla JS file; no framework, no CDN. Visual design ported from the team prototype (`prototype/`, `docs/prototype/claude-brief.md`): colours converted to hex, DM Sans bundled locally (OFL), lucide icons inlined (ISC) | REQ-001…REQ-007, REQ-009, REQ-018, NFR-003, NFR-005, NFR-010 |
 | Session store | Create/resume/delete sessions, nickname uniqueness, 15-session cap, 30-min idle expiry sweep | Python dict + asyncio task, in memory | REQ-001, REQ-011, NFR-002, NFR-006 |
 | Tutor registry | Load and validate `tutors/<id>/tutor.toml` + `rubric.md` at start; enabled list | `tomllib` (stdlib) + Pydantic models with `extra="forbid"` | REQ-002, REQ-008 |
-| Prompt builder | Assemble the core rules + subject tutor + conversation into model messages; isolate untrusted content; apply the context budget | Versioned markdown files merged by `## section` (pattern from `tutor-ipad`'s `load_prompt`); core sections are locked; template function | REQ-005, REQ-010, AC-005.5 |
+| Prompt builder | Assemble the core rules + subject tutor + conversation into model messages; isolate untrusted content; apply the context budget | Versioned markdown files merged by `## section` (pattern from `ipad-tutor`'s `load_prompt`); core sections are locked; template function | REQ-005, REQ-010, AC-005.5 |
 | Tutoring service | Turn intents (ask, hint, answer, check, practice) into model calls; hint level; exercise analysis; structured output validation with one retry | Python, Pydantic schemas → JSON schema for Ollama `format` | REQ-004…REQ-007, REQ-015 |
 | Request queue | FIFO across all sessions; N parallel workers (N = Ollama parallel setting); positions; one in-flight request per session; 120-s queue timeout; 60-s model timeout | asyncio | REQ-009, AC-003.3, NFR-004 |
-| Maths checker | Parse plain-text Maths attempts, check step equivalence and equation solutions, return verdict + first wrong step or "can't tell" | sympy (adapted from `tutor-ipad` `checkers/math.py`), allow-list tokenizer, worker process, 2-s limit | AC-006.6 … AC-006.9, ADR-0007 |
+| Maths checker | Parse plain-text Maths attempts, check step equivalence and equation solutions, return verdict + first wrong step or "can't tell" | sympy (adapted from `ipad-tutor` `checkers/math.py`), allow-list tokenizer, worker process, 2-s limit | AC-006.6 … AC-006.9, ADR-0007 |
 | Model client | Stream chat, structured calls, image input, health check, model/digest check | Official `ollama` Python client (async) over loopback HTTP [to confirm in T-001] | REQ-003…REQ-007, REQ-012 |
 | Image pipeline | Reject bodies over 11 MB by `Content-Length` and a streaming byte cap before parsing; parse the upload in memory (multipart spooling raised above the cap, so nothing goes to a temp file); validate type/size, decode safely, fix EXIF orientation and drop metadata, downscale to the model's input size | Pillow, with pixel-count limit | REQ-004, NFR-001, NFR-002 |
 | Teacher insights | Aggregate counters per tutor and topic (topics only from the tutor's fixed `topics` list, else "other"); PIN check with per-address lockout; served on loopback unless allowed | In memory | REQ-013 |
-| Hub CLI | `setup` (deps + model pull + digest record + pinned `cloudflared`), `start` (checks, bind, QR code, PIN, status line; `--online-demo`, `--new-token`), `eval`, `bench` | Python console script; typed settings with environment overrides (pydantic-settings, as in `tutor-ipad`); `segno` for QR codes (used by `tutor-ipad`) | REQ-012, REQ-014, REQ-016, REQ-017 |
-| Online demo tunnel *(opt-in)* | Run `cloudflared` quick tunnel to a **dedicated listener 127.0.0.1:8001** (every request on it is remote), parse its URL, reopen if it drops; token gate (per-start token in QR → session-lifetime HttpOnly `Secure` cookie, `?k=` stripped by redirect); teacher pages refused on this listener | Adapted from `tutor-ipad` `pairing.py` (`QuickTunnel`, `TunnelGate`, `with_token`, `print_qr`), Linux binary added | REQ-017, ADR-0006 |
+| Hub CLI | `setup` (deps + model pull + digest record + pinned `cloudflared`), `start` (checks, bind, QR code, PIN, status line; `--online-demo`, `--new-token`), `eval`, `bench` | Python console script; typed settings with environment overrides (pydantic-settings, as in `ipad-tutor`); `segno` for QR codes (used by `ipad-tutor`) | REQ-012, REQ-014, REQ-016, REQ-017 |
+| Online demo tunnel *(opt-in)* | Run `cloudflared` quick tunnel to a **dedicated listener 127.0.0.1:8001** (every request on it is remote), parse its URL, reopen if it drops; token gate (per-start token in QR → session-lifetime HttpOnly `Secure` cookie, `?k=` stripped by redirect); teacher pages refused on this listener | Adapted from `ipad-tutor` `pairing.py` (`QuickTunnel`, `TunnelGate`, `with_token`, `print_qr`), Linux binary added | REQ-017, ADR-0006 |
 | Model runtime | Serve Gemma 4 on loopback with N parallel requests | Ollama (system service), `OLLAMA_HOST=127.0.0.1:11434`, `OLLAMA_NUM_PARALLEL=N` | ADR-0004 |
 | Evaluation and benchmark | Evaluation set, safety set, scorers, latency/soak runner, report files | Python scripts under `evals/`, run against the real model on the hub | REQ-014, NFR-005, NFR-009, NFR-011 |
 
@@ -150,7 +150,7 @@ partly correct; a non-equivalent step → not yet correct at that step. When the
 was read from a photo, the checker only judges step equivalence.
 
 **Subject tutor folder** (`tutors/maths/`, validated at start; pattern from
-`tutor-ipad/tutor-app/modes/`): `tutor.toml` with `id`, `name`, `description`, `enabled`,
+`ipad-tutor/tutor-app/modes/`): `tutor.toml` with `id`, `name`, `description`, `enabled`,
 `checker` (optional, `"maths"`), `examples` (few-shot dialogues showing hint-first
 behaviour); `rubric.md` with `## teaching`, `## check` and `## practice` sections. Unknown
 fields are errors (AC-008.3). Core rules (hint-first, safety, simple English, plain-text maths
@@ -174,7 +174,7 @@ notation such as `x^2` and `3/4` instead of LaTeX, untrusted-content handling) l
   (127.0.0.1:8001); every request on that listener is remote, whatever its headers, and
   teacher pages and `/healthz` are refused there. Each request needs the access token
   (QR `?k=` → redirect that strips it and sets a session-lifetime HttpOnly `Secure`
-  cookie; constant-time compare), adapted from `tutor-ipad`'s `TunnelGate`. The token is
+  cookie; constant-time compare), adapted from `ipad-tutor`'s `TunnelGate`. The token is
   generated at each start and held in memory only, so old QR codes (e.g. in a demo video)
   stop working.
 - Secrets: none in the repository. The teacher PIN and session secrets are generated at
@@ -271,7 +271,7 @@ notation such as `x^2` and `3/4` instead of LaTeX, untrusted-content handling) l
 | Model evaluation | Hint-first compliance, check accuracy, reading level, safety refusals (NFR-009, NFR-011) | `opentutor eval` against real Ollama + Gemma 4 | No — on the hub; report attached to PRs that change prompts, tutors or the model |
 | Performance / soak | Time to first reply (1 and 5 students), 2-hour soak, memory (NFR-004…NFR-006) | `opentutor bench` | No — on the hub |
 | Offline / network | No outbound traffic; Ollama unreachable from a second device | Manual checklist with upstream disconnected + port scan | No — before release |
-| Online demo | Token gate (unit, with a fake `cloudflared` process as in `tutor-ipad`'s tests); streaming through a real tunnel | pytest; manual run | Gate: yes · real tunnel: no |
+| Online demo | Token gate (unit, with a fake `cloudflared` process as in `ipad-tutor`'s tests); streaming through a real tunnel | pytest; manual run | Gate: yes · real tunnel: no |
 
 Each acceptance criterion maps to at least one automated test named after its ID
 (e.g. `test_ac_001_4_duplicate_nickname`); model-quality ACs map to evaluation metrics.
@@ -292,8 +292,9 @@ Each acceptance criterion maps to at least one automated test named after its ID
 | D-6 | "New exercise" decided by deterministic rules, not by the model | — (design detail) |
 | D-7 | Optional online demo link through a token-gated Cloudflare quick tunnel | [docs/adr/0006-offer-an-optional-online-demo-link.md](../adr/0006-offer-an-optional-online-demo-link.md) |
 | D-8 | sympy maths checker decides Maths verdicts when it can read the attempt | [docs/adr/0007-let-a-symbolic-checker-decide-maths-verdicts.md](../adr/0007-let-a-symbolic-checker-decide-maths-verdicts.md) |
-| D-9 | Four-level hint ladder (nudge, hint, next step, full solution on request), from `tutor-ipad`'s `shared.md` | — (design detail) |
+| D-9 | Four-level hint ladder (nudge, hint, next step, full solution on request), from `ipad-tutor`'s `shared.md` | — (design detail) |
 | D-10 | Read aloud in the browser with the Web Speech API (`speechSynthesis`), on-device voices only (`localService`); no server part | — (design detail) |
+| D-11 | iPad handwriting tutor integrated as a companion service, not merged | [docs/adr/0008-integrate-ipad-tutor-as-a-companion-service.md](../adr/0008-integrate-ipad-tutor-as-a-companion-service.md) |
 
 ## Open questions and risks
 - Q-1 (product.md): GPU model/VRAM → sets the default model (E4B, E2B or 26B-A4B) and `OLLAMA_NUM_PARALLEL`; settled by T-001.
@@ -302,9 +303,10 @@ Each acceptance criterion maps to at least one automated test named after its ID
 - Risk: an analysis call before the first hint may push photo latency past 15 s → T-001 measures it; fallback is to merge analysis into the streamed reply for text questions.
 - Risk: small-model accuracy on checking → evaluation set and targets (NFR-011); "check with your teacher" reminder.
 
-## Reuse from tutor-ipad
-`tutor-ipad/` is a separate product in this repository (Apple-silicon Mac, MLX runtime).
-Paths below are relative to `tutor-ipad/tutor-app/apps/server/src/inktutor_server/`.
+## Reuse from ipad-tutor
+`ipad-tutor/` is the iPad handwriting tutor, integrated as a separate service (ADR-0008;
+Apple-silicon Mac, MLX runtime).
+Paths below are relative to `ipad-tutor/tutor-app/apps/server/src/inktutor_server/`.
 Copied code keeps a header comment naming its source file.
 
 | Source | Use in OpenTutor | Changes needed |

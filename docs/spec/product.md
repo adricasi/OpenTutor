@@ -3,7 +3,7 @@
 - Status: In review <!-- Draft | In review | Approved -->
 - Last updated: 2026-10-24
 - Input: [idea brief](../discovery/idea-brief.md) (verdict Go) · [research notes](../discovery/research-notes.md)
-- Related: `tutor-ipad/` in this repository is a **separate product** (iPad handwriting tutor on an Apple-silicon Mac). It is out of scope for this spec; OpenTutor borrows patterns and code from it where noted in [design.md](design.md#reuse-from-tutor-ipad).
+- Related: `ipad-tutor/` in this repository is the **iPad handwriting tutor**, a second front end that runs as its own service on an Apple-silicon Mac ([ADR-0008](../adr/0008-integrate-ipad-tutor-as-a-companion-service.md), its own README is its spec). This spec covers the phone hub; OpenTutor borrows patterns and code from it where noted in [design.md](design.md#reuse-from-ipad-tutor).
 
 ## Problem
 Students from low-income families often have no home internet or prepaid data, share an
@@ -72,7 +72,7 @@ Wi-Fi, with zero mobile data and nothing to install.
 - Hosting or integrating a content library (Kolibri, RACHEL) in this version.
 - Grading or assessment for school records.
 - Internet access for students through the hub.
-- The iPad handwriting canvas, voice and screen tutor of `tutor-ipad/` (separate product; possible future front end of the hub).
+- Merging the iPad tutor's handwriting canvas, voice or screen tutor into the hub's code: `ipad-tutor/` stays a separate service (ADR-0008).
 
 ## Constraints
 - Deployment target: **Local / on-device** — one hub laptop runs the model and the web app; students' phones connect over the hub's own Wi-Fi (laptop hotspot); no cloud backend. Using a separate router is not supported in this version.
@@ -101,7 +101,7 @@ Wi-Fi, with zero mobile data and nothing to install.
 - [x] Q-2: Hub laptop operating system → Linux.
 - [ ] Q-3: Exact Ollama tags and sizes for Gemma 4 E2B/E4B (research sources disagree); verify on the official Ollama library.
 - [ ] Q-4: Which subjects beyond Maths, English language and Science, if any, for this version?
-- [ ] Q-5: Gemma 4 license terms and any terms operators must accept — `tutor-ipad`'s model manifest records "Gemma Terms of Use"; confirm on the official model card and record them in the README.
+- [ ] Q-5: Gemma 4 license terms and any terms operators must accept — `ipad-tutor`'s model manifest records "Gemma Terms of Use"; confirm on the official model card and record them in the README.
 
 ## Assumptions
 <!-- Anything decided without confirmation. Mark in text as [ASSUMPTION A-n]. -->

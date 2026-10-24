@@ -3,7 +3,7 @@
 Runs typed exercises and the safety set through the real `Tutoring` and scores the results:
 hint-first compliance, attempt-check accuracy, reading level and safety per criterion.
 The judge pattern (temperature-0 model answering {"pass", "reason"}) is borrowed from
-tutor-ipad `inktutor_server/judge.py`.
+ipad-tutor `inktutor_server/judge.py`.
 """
 
 from __future__ import annotations

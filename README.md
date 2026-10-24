@@ -13,8 +13,9 @@ Built for the students who need it most: families without home internet or prepa
 who can't pay for tutoring. Specification: [docs/spec](docs/spec/) · decisions:
 [docs/adr](docs/adr/).
 
-> `tutor-ipad/` in this repository is a separate product (an iPad handwriting tutor for
-> Apple-silicon Macs) with its own README.
+> **Two front ends, one project.** The phone hub (this README) and the
+> [iPad handwriting tutor](#ipad-handwriting-tutor-ipad-tutor) in `ipad-tutor/`, which runs as its own
+> service on an Apple-silicon Mac ([ADR-0008](docs/adr/0008-integrate-ipad-tutor-as-a-companion-service.md)).
 
 ## Hackathon submission
 We are entering **Best Use of Gemma 4** and **Best Open-Source AI Project**. The organisers' "minimum standard" for the repo and the README is listed below; this section says where each item is met. The same table, with file-level evidence, is in [docs/hackathon/CHECKLIST.md](docs/hackathon/CHECKLIST.md).
@@ -43,8 +44,9 @@ We are entering **Best Use of Gemma 4** and **Best Open-Source AI Project**. The
 ### What we have built
 Taken from [docs/spec](docs/spec/) (requirements, design, tasks and progress log) and [docs/adr](docs/adr/):
 - **Hub:** join with a nickname, subject list, typed and photo questions, hint ladder, attempt checks, practice sets, fair queue, teacher insights view, optional online demo link, read-aloud of replies.
-- **Specification:** 18 requirements with testable acceptance criteria, a design, a task plan with status, and 7 architecture decision records.
-- **Quality:** 165 tests and about 89% coverage at the last recorded run (docs/spec/progress.md, not re-run here), ruff, mypy, pip-audit and gitleaks, a 34-prompt safety set and `opentutor eval` with fixed targets.
+- **iPad handwriting tutor** (`ipad-tutor/`): Apple Pencil on an iPad, handwriting read on the Mac, deterministic checkers, marks on the page, voice; integrated as a companion service (see below).
+- **Specification:** 18 requirements with testable acceptance criteria, a design, a task plan with status, and 8 architecture decision records.
+- **Quality:** 185 tests and about 88% coverage at the last run of the hub suite, ruff, mypy, pip-audit and gitleaks, a 34-prompt safety set and `opentutor eval` with fixed targets.
 - **Not done yet:** the run against real Gemma 4 on the hub laptop, a phone and the hotspot (task T-001), and the benchmark and soak test (T-015). See [docs/spec/tasks.md](docs/spec/tasks.md).
 
 ## How it works
@@ -151,6 +153,30 @@ hub, not the quality of Gemma 4's answers.
 - **Secrets and data:** no API keys are needed. `.env` files are git-ignored (only
   `.env.example` is tracked), tests and examples use invented data, dependencies are locked in
   `uv.lock` and scanned with `pip-audit` and gitleaks.
+
+## iPad handwriting tutor (`ipad-tutor/`)
+For work done by hand: the student writes on an iPad with an Apple Pencil (Safari), the Mac
+reads the handwriting, deterministic checkers (sympy, accounting, sudoku, diagrams) mark it
+like a teacher, and the tutor gives hints and spoken answers. It is a separate, self-contained
+service on an **Apple-silicon Mac** (MLX models, 32 GB+ RAM); its own guide is
+[`ipad-tutor/README.md`](ipad-tutor/README.md):
+```sh
+cd ipad-tutor && ./setup-local.sh && cd tutor-app
+make models     # pinned models from ink-tutor/models/manifest.toml
+make ipad       # server on :8000 + HTTPS link and QR code for the iPad
+```
+How the two fit together ([ADR-0008](docs/adr/0008-integrate-ipad-tutor-as-a-companion-service.md)):
+- **Separate services, separate machines by default:** the phone hub on the Linux laptop, the
+  iPad tutor on a Mac. Neither imports the other; each keeps its own data rules.
+- **Both on one Mac (demo):** the iPad tutor uses port 8000 (and 8080 for its model server), so
+  start the hub on another port: `uv run opentutor start --port 8100`.
+- **Sharing one Gemma 4 (optional, untested):** the iPad tutor can use any OpenAI-compatible
+  server, so on one Mac it can use the hub's Ollama instead of starting its own:
+  `LOCAL_SERVER_MANAGED=false LOCAL_OPENAI_BASE_URL=http://127.0.0.1:11434/v1` in
+  `ipad-tutor/tutor-app/.env`. It picks the first model Ollama lists, so pull only the Gemma 4
+  tag you want it to use.
+- **Checks:** run its own from `ipad-tutor/tutor-app/` (`make test`, `make lint`); the root
+  linters exclude `ipad-tutor/`.
 
 ## Develop
 ```bash
