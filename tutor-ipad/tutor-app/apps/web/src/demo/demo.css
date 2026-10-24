@@ -1,0 +1,11 @@
+/* `make demo` progress pill (bottom left, above the page; never over the panel) */
+.demo-pill {
+  position: fixed; left: 12px; bottom: 12px; z-index: 50; display: flex; align-items: center; gap: 10px;
+  padding: 6px 6px 6px 14px; border-radius: 999px; background: var(--ink, #1f2328); color: #fff;
+  font: 500 14px/1.2 system-ui, -apple-system, sans-serif; box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+  font-variant-numeric: tabular-nums;
+}
+.demo-pill button {
+  min-height: 30px; padding: 2px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .4);
+  background: transparent; color: #fff;
+}

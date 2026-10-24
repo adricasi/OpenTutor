@@ -1,0 +1,10 @@
+# Accounting: journal entries and T-accounts. Geometry (ink/ledger.py) finds the T-accounts (bar + stem) and
+# the journal rows; each row is read as text. Checkers own ✓/✗: debits = credits per entry, T-account totals
+# and balances, arithmetic lines. The tutor asks about the accounts chosen (a judgement, not arithmetic).
+recognizer = "ledger"
+checkers = ["ledger.balanced", "ledger.taccount", "math.equivalent"]
+marks = ["check", "cross", "question", "underline"]
+checker_marks = ["check", "cross"]  # a tutor ✗ ("Cash should be debited") becomes a question
+ghost_unprompted = false
+confidence_gate = 0.5
+settle_ms = 2500

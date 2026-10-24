@@ -1,0 +1,8 @@
+# Maths: handwritten lines → LaTeX; long divisions → structure. Checkers decide; the tutor explains.
+recognizer = "math"
+checkers = ["math.equivalent", "math.equation", "arithmetic.long_division"]
+marks = ["check", "cross", "underline", "question"]
+divisions = true          # detect Spanish-layout long divisions from their bracket stroke
+ghost_unprompted = false  # corrected steps appear only at hint level 3
+confidence_gate = 0.5     # below this, ask ("I read this as … — right?") instead of grading
+settle_ms = 2500          # the line being written is graded after this much pen-up idle

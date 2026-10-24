@@ -1,0 +1,7 @@
+# Language: handwritten text → text; the tutor marks words (squiggles), never rewrites the line.
+recognizer = "text"
+checkers = []
+marks = ["underline", "question", "check", "circle"]
+ghost_unprompted = false   # the corrected phrasing is hint level 3
+confidence_gate = 0.45
+settle_ms = 2500

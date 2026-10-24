@@ -1,0 +1,10 @@
+.env
+node_modules/
+__pycache__/
+.venv/
+models/weights/
+apps/web/dist/
+*.log
+.DS_Store
+fixtures/videos/*
+!fixtures/videos/.gitkeep

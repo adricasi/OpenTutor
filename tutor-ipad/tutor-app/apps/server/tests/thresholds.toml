@@ -1,0 +1,7 @@
+# Tier-1 accuracy thresholds per mode (docs/RECORDINGS.md §2). CER = character error rate on normalized LaTeX/text.
+[math]
+max_cer = 0.15          # per handwritten line, after normalization (spaces, \left/\right, braces around one token)
+division_fields = 1.0   # long divisions: dividend, divisor and quotient must all match exactly
+
+[text]
+max_cer = 0.10          # Phase 7 target

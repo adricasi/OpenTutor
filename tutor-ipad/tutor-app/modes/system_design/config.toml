@@ -1,0 +1,7 @@
+# System design: boxes and arrows. Checkers flag orphans and single points of failure; the tutor adds pins/ghost boxes.
+recognizer = "diagram"
+checkers = ["graph.system"]
+marks = ["pin", "circle", "question"]
+ghost_unprompted = true
+confidence_gate = 0.3
+settle_ms = 2500

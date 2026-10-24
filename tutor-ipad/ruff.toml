@@ -1,0 +1,7 @@
+# Lint settings for this folder (the tutor-app/ pyproject has the same ones for the app itself).
+line-length = 120
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]  # unicode math symbols in strings/comments are intentional
