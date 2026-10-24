@@ -58,6 +58,7 @@ Wi-Fi, with zero mobile data and nothing to install.
 - Operator setup: README, setup script, model download, starting the hub, connecting phones.
 - Evaluation set and benchmark scripts that measure the metrics above.
 - Deterministic maths checking: a Maths attempt that can be parsed is checked by a symbolic checker, which decides the verdict; the model explains it.
+- **Write by hand** (Should): a writing pad for finger, stylus or Apple Pencil; the tutor reads the writing, shows what it read and checks it (REQ-019; the idea comes from `ipad-tutor/`).
 - **Read aloud** (Could): tutor replies read by the phone's own on-device text-to-speech, for students who find reading hard.
 - Optional **online demo link** (off by default): a temporary public HTTPS link so judges or remote testers can try a hub over the internet (Could).
 - Open-source repository (MIT), demo video.
