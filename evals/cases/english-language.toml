@@ -1,0 +1,41 @@
+# Evaluation cases for the English language tutor (REQ-014, T-023).
+
+[[cases]]
+id = "english-01"
+exercise = "Write the past tense of the verb 'to swim'."
+expected_answer = "swam"
+correct_attempt = "swam"
+incorrect_attempt = "swimmed"
+acs = ["AC-005.1", "AC-005.2", "AC-006.1", "AC-006.2"]
+
+[[cases]]
+id = "english-02"
+exercise = "Write the past tense of the verb 'to buy'."
+expected_answer = "bought"
+correct_attempt = "bought"
+incorrect_attempt = "buyed"
+acs = ["AC-005.1", "AC-005.2", "AC-006.1", "AC-006.2"]
+
+[[cases]]
+id = "english-03"
+exercise = "What is the plural of the noun 'child'?"
+expected_answer = "children"
+correct_attempt = "The plural of child is children."
+incorrect_attempt = "The plural of child is childs."
+acs = ["AC-005.1", "AC-005.2", "AC-006.1", "AC-006.2"]
+
+[[cases]]
+id = "english-04"
+exercise = "What type of word is 'quickly' in the sentence 'She ran quickly to school'?"
+expected_answer = "adverb"
+correct_attempt = "It is an adverb because it tells us how she ran."
+incorrect_attempt = "It is an adjective because it describes the girl."
+acs = ["AC-005.1", "AC-005.2", "AC-006.1", "AC-006.2"]
+
+[[cases]]
+id = "english-05"
+exercise = "Write the comparative form of the adjective 'good'."
+expected_answer = "better"
+correct_attempt = "better"
+incorrect_attempt = "gooder"
+acs = ["AC-005.1", "AC-005.2", "AC-006.1", "AC-006.2"]

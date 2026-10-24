@@ -37,4 +37,7 @@ build/
 .agents/
 CLAUDE.md
 .mcp.json
+
+# --- evaluation reports (opentutor eval) ---
+reports/
 opentutor.toml

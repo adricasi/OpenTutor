@@ -14,6 +14,7 @@ import segno
 
 from .app import create_app
 from .config import Settings
+from .evaluation import eval_command
 from .model import OllamaModel
 from .serve import is_loopback, serve
 from .setup import setup
@@ -89,12 +90,26 @@ def main(argv: list[str] | None = None) -> int:
     start.add_argument("--online-demo", action="store_true", help="also open a public demo link")
     setup_cmd = sub.add_parser("setup", help="download the configured model and pin its digest")
     setup_cmd.add_argument("--online-demo", action="store_true", help="also fetch cloudflared")
+    evaluate = sub.add_parser("eval", help="score the tutor and the safety set (REQ-014)")
+    evaluate.add_argument("--tutor", help="only this subject tutor id, e.g. maths")
+    evaluate.add_argument(
+        "--judge-model", help="Ollama tag for the judge (default: the tutor model)"
+    )
+    evaluate.add_argument("--safety-only", action="store_true", help="skip the exercise cases")
     args = parser.parse_args(argv)
     if args.command == "setup":
         code = setup(Settings().model)
         if code == 0 and args.online_demo and find_cloudflared() is None:
             print(f"✓ cloudflared installed at {download_cloudflared()}")
         return code
+
+    if args.command == "eval":
+        return eval_command(
+            Settings(),
+            tutor_id=args.tutor,
+            judge_model=args.judge_model,
+            safety_only=args.safety_only,
+        )
 
     overrides: dict[str, object] = {}
     if args.host:
