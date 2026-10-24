@@ -23,12 +23,15 @@ first step of a chain that is not equivalent to the previous one
    shows wrong verdicts when they disagree.
 
 ## Decision
-We will use option 2 (AC-006.6 … AC-006.9): adapt `tutor-ipad`'s sympy checker to parse
+We will use option 2 (AC-006.6 … AC-006.10), for typed attempts only: adapt `tutor-ipad`'s sympy checker to parse
 plain-text maths with `sympy.parse_expr`. Because `parse_expr` evaluates its input
 internally (sympy's documentation warns against unsanitised input), every attempt first
 passes our own strict allow-list tokenizer (digits, a small set of single-letter
-variables, `+ - * / ^ ( ) = . ,`, whitelisted function names such as `sqrt`) and a length
-cap, and the checker runs in a separate worker process with a 2-second limit, and let its
+variables excluding sympy names E, I, N, O, Q, S, `+ - * / ^ ( ) =`, `.` only as a decimal
+point between digits, whitelisted function names such as `sqrt`) and a length cap; it is
+parsed with an explicit `local_dict`, an empty global namespace plus the allowed
+functions and `evaluate=False`; and the checker runs in a separate worker process with
+memory and CPU limits and a 2-second timeout (killed and respawned), and let its
 verdict override the model's for Maths; the model writes the explanation within that
 verdict.
 

@@ -40,7 +40,7 @@ Wi-Fi, with zero mobile data and nothing to install.
 | Concurrent students served | 5 active students without errors; up to 15 connected | Load test with simulated phone clients |
 | Hint-first compliance | ≥ 95% of tutoring replies on the evaluation set don't reveal the final answer before the student asks | Evaluation set, ≥ 20 exercises per subject tutor |
 | Attempt-check accuracy | ≥ 90% correct "right / wrong" verdicts on the evaluation set (maths) | Evaluation set with known answers |
-| Offline operation | 0 outbound connections from the hub during a full session in hub mode (the default; the optional online demo link is excluded) | Session run with upstream network disabled and outbound traffic monitored |
+| Offline operation | 0 outbound connections from the OpenTutor and Ollama processes during a full session in hub mode (the default; the optional online demo link is excluded) | Session run with upstream network disabled and outbound traffic monitored |
 | Setup time | ≤ 30 min from a laptop with Ollama and the model already downloaded to students connected | Timed walkthrough of the README by someone outside the team |
 | Hackathon demo | Live end-to-end demo with internet off, public repo, README and demo video by the deadline | Submission checklist |
 
@@ -74,7 +74,7 @@ Wi-Fi, with zero mobile data and nothing to install.
 - The iPad handwriting canvas, voice and screen tutor of `tutor-ipad/` (separate product; possible future front end of the hub).
 
 ## Constraints
-- Deployment target: **Local / on-device** — one hub laptop runs the model and the web app; students' phones connect over the hub's local Wi-Fi (laptop hotspot or a local router); no cloud backend.
+- Deployment target: **Local / on-device** — one hub laptop runs the model and the web app; students' phones connect over the hub's own Wi-Fi (laptop hotspot); no cloud backend. Using a separate router is not supported in this version.
 - Model: Gemma 4, run locally through Ollama (E4B default, E2B fallback); local Gemma 4 confirmed as eligible for the hackathon category.
 - Hub hardware (reference machine): Linux laptop, 64 GB RAM, dedicated GPU (model unconfirmed, Q-1). Other operating systems are not supported in this version.
 - Team: 3 people, Python. Stack from the repository: Python 3.12+, uv.
@@ -109,3 +109,5 @@ Wi-Fi, with zero mobile data and nothing to install.
 - ~~A-3~~: Latency targets 5 s / 15 s — confirmed by the user, now in Success metrics.
 - ~~A-4~~: Group size — decided by the user: 5 active, 15 connected.
 - A-5: Subject tutors are defined as configuration files so operators and contributors can add one without code changes.
+- A-6: The teacher view is opened on the hub laptop itself by default; the operator can allow it from the hub Wi-Fi in the configuration (spec review: classmates share the Wi-Fi password).
+- A-7: The hackathon cut is the set of tasks marked in tasks.md ("Hackathon cut"); everything else continues after the deadline.

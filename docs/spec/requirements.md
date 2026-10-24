@@ -21,11 +21,12 @@ configuration unless stated otherwise.
 - Goals: G-1, G-3
 - Acceptance criteria:
   - AC-001.1: WHEN a student device opens the hub address THE SYSTEM SHALL show the join page without loading any resource from outside the hub.
-  - AC-001.2: WHEN a student submits a nickname of 1–20 characters made of letters, digits, spaces, hyphens or underscores THE SYSTEM SHALL start a session for that device and show the list of subject tutors.
+  - AC-001.2: WHEN a student submits a nickname of 1–20 characters made of ASCII letters, digits, spaces, hyphens or underscores, with at least one letter or digit, THE SYSTEM SHALL start a session for that device and show the list of subject tutors.
   - AC-001.3: IF the submitted nickname is empty, longer than 20 characters or contains other characters THEN THE SYSTEM SHALL reject it and explain the allowed format, without starting a session.
   - AC-001.4: IF the submitted nickname matches (case-insensitively) the nickname of another active session THEN THE SYSTEM SHALL ask the student to choose a different nickname.
   - AC-001.5: IF 15 sessions are already active when a student tries to join THEN THE SYSTEM SHALL refuse to start a session and show a "hub is full, try again in a few minutes" message.
-  - AC-001.6: WHEN a student with an active session reloads the page or reopens the hub address on the same device THE SYSTEM SHALL resume that session.
+  - AC-001.6: WHEN a student with an active session reloads the page or reopens the hub address on the same device THE SYSTEM SHALL resume that session, including the current conversation.
+  - AC-001.7: IF a client address already has 2 active sessions, or has tried to join more than 10 times in the last minute, THEN THE SYSTEM SHALL refuse to start another session and ask the student to wait.
 
 ### REQ-002: Choose a subject tutor
 - Story: As a student, I want to pick the subject my homework is about, so that the tutor explains it the way that subject needs.
@@ -43,7 +44,7 @@ configuration unless stated otherwise.
 - Acceptance criteria:
   - AC-003.1: WHEN a student sends a message of 1–2,000 characters THE SYSTEM SHALL show the message in the conversation and display the tutor's reply progressively as it is generated.
   - AC-003.2: IF a student sends an empty message or one longer than 2,000 characters THEN THE SYSTEM SHALL not send it to the model and SHALL tell the student the limit.
-  - AC-003.3: IF the model returns an error or produces no output within 60 seconds of the request starting to be processed THEN THE SYSTEM SHALL stop the request, show a "something went wrong, please try again" message with a retry action, and keep the conversation usable.
+  - AC-003.3: IF a model call returns an error, produces no output within 60 seconds of starting to be processed, runs longer than 120 seconds in total, or exceeds the configured maximum reply length THEN THE SYSTEM SHALL stop the request, show a "something went wrong, please try again" message with a retry action, and keep the conversation usable.
 
 ### REQ-004: Ask with a photo of the exercise
 - Story: As a student, I want to take a photo of my worksheet or textbook page, so that I don't have to type out the exercise.
@@ -63,7 +64,7 @@ configuration unless stated otherwise.
 - Goals: G-2
 - Acceptance criteria:
   - AC-005.1: WHEN a student asks about a new exercise THE SYSTEM SHALL reply at hint level 1 (a nudge: what to look at or which idea applies) with a question that invites the student to try, and SHALL NOT state the final answer.
-  - AC-005.2: WHEN the student asks for another hint THE SYSTEM SHALL move one level up the hint ladder for the same exercise — level 2 (a hint that names the rule or method), then level 3 (the correct next step only) — and SHALL stay at level 3 for further hint requests, without stating the final answer.
+  - AC-005.2: WHEN the student asks for another hint THE SYSTEM SHALL move one level up the hint ladder for the same exercise — level 2 (a hint that names the rule or method), then level 3 (the correct next step only) — and SHALL stay at level 3 for further hint requests, without stating the final answer. IF the correct next step would itself be the final answer THEN level 3 SHALL show the method with the final value left for the student to complete.
   - AC-005.3: WHEN the student explicitly asks for the answer THE SYSTEM SHALL give (hint level 4) the complete worked solution with each step explained, followed by a reminder that the AI can make mistakes and the student can check with their teacher.
   - AC-005.4: WHEN the student sends a follow-up message THE SYSTEM SHALL answer in the context of the current exercise and the conversation so far.
   - AC-005.5: WHILE a conversation exceeds the model's context budget THE SYSTEM SHALL drop the oldest turns first but keep the original exercise (text and image) in the context.
@@ -80,10 +81,11 @@ configuration unless stated otherwise.
   - AC-006.3: WHEN the verdict is "correct" THE SYSTEM SHALL confirm it, briefly say why the method works and offer practice (REQ-007).
   - AC-006.4: IF the model's verdict does not match the expected structure THEN THE SYSTEM SHALL retry once and, if it still fails, tell the student it couldn't check the attempt and suggest rewriting it.
   - AC-006.5: IF there is no current exercise in the conversation when an attempt is submitted THEN THE SYSTEM SHALL ask the student which exercise the attempt belongs to.
-  - AC-006.6: WHEN a Maths attempt can be read as a sequence of expressions or equations THE SYSTEM SHALL check with the deterministic maths checker that each step is equivalent to the previous one; IF a step is not equivalent THEN the verdict SHALL be "not yet correct" with that step as the first incorrect step.
-  - AC-006.7: WHEN every step of a Maths attempt is equivalent and the exercise is an equation the maths checker can solve THE SYSTEM SHALL decide "correct" or "not yet correct" by comparing the student's final answer with the checker's solution.
-  - AC-006.8: WHEN the maths checker has decided a verdict THE SYSTEM SHALL show that verdict and SHALL only use the model to explain it; the explanation SHALL NOT contradict the checker.
+  - AC-006.6: WHEN a typed Maths attempt can be read as a sequence of expressions or equations THE SYSTEM SHALL check with the deterministic maths checker that each step is equivalent to the previous one (equations: same solution set; expressions: their difference simplifies to zero), starting from the exercise when the student typed the exercise; IF a step is not equivalent THEN the verdict SHALL be "not yet correct" with that step as the first incorrect step.
+  - AC-006.7: WHEN every step of a typed Maths attempt is equivalent and the exercise was typed by the student and is an equation the maths checker can solve THE SYSTEM SHALL decide "correct" if the last step states the checker's solution, and "partly correct" if the steps are right but the solution isn't reached yet. WHEN the exercise text was read from a photo by the model, the checker SHALL only decide step equivalence and the model SHALL judge the final answer.
+  - AC-006.8: WHEN the maths checker has decided a verdict THE SYSTEM SHALL show that verdict and SHALL only use the model to explain it; the explanation SHALL NOT contradict the checker, and the checker's solution SHALL NOT be given to the model unless the verdict is "correct" (so AC-006.2 holds).
   - AC-006.9: IF the maths checker cannot read the attempt or takes longer than 2 seconds THEN THE SYSTEM SHALL fall back to the model's verdict (AC-006.1).
+  - AC-006.10: WHEN an attempt is sent as a photo THE SYSTEM SHALL use the model's verdict (AC-006.1); the maths checker only handles typed attempts.
 
 ### REQ-007: Practice with similar exercises
 - Story: As a student, I want a few similar exercises after I understand one, so that I can practise and be sure I've got it.
@@ -157,10 +159,10 @@ configuration unless stated otherwise.
 - Priority: Should
 - Goals: G-2, G-5
 - Acceptance criteria:
-  - AC-013.1: WHEN the hub starts THE SYSTEM SHALL generate a 6-digit teacher PIN and print it only on the operator's console.
+  - AC-013.1: WHEN the hub starts THE SYSTEM SHALL generate a 6-digit teacher PIN, print it only on the operator's console, and serve the teacher page only on the hub laptop itself unless the operator has allowed it from the hub Wi-Fi in the configuration [ASSUMPTION A-6].
   - AC-013.2: WHEN a user opens the teacher page and enters the correct PIN THE SYSTEM SHALL show, per subject tutor, the topics asked about with counts, the number of hints requested, the number of attempts by verdict, and the topics with the most "not yet correct" verdicts.
-  - AC-013.3: WHEN the teacher view shows topics THE SYSTEM SHALL show them aggregated, without message text, images or nicknames.
-  - AC-013.4: IF a wrong PIN is entered 5 times in a row THEN THE SYSTEM SHALL block teacher log-in for 5 minutes.
+  - AC-013.3: WHEN the teacher view shows topics THE SYSTEM SHALL show them aggregated, without message text, images or nicknames, using only topic names from the subject tutor's fixed topic list (anything else counts as "other").
+  - AC-013.4: IF a wrong PIN is entered 5 times in a row from one client address THEN THE SYSTEM SHALL block teacher log-in from that address for 5 minutes.
   - AC-013.5: WHEN the hub restarts THE SYSTEM SHALL reset the teacher insights.
 
 ### REQ-014: Evaluation and benchmark tooling
@@ -169,9 +171,10 @@ configuration unless stated otherwise.
 - Goals: G-2, G-4, G-5
 - Acceptance criteria:
   - AC-014.1: THE SYSTEM SHALL include an evaluation set of at least 20 exercises per shipped subject tutor, each with its expected answer and at least one correct and one incorrect sample attempt, including at least 5 exercises per subject given as images.
-  - AC-014.2: WHEN a contributor runs the evaluation command against a running model THE SYSTEM SHALL report hint-first compliance and attempt-check accuracy per subject tutor and exit non-zero if a target in NFR-011 is missed.
+  - AC-014.2: WHEN a contributor runs the evaluation command against a running model THE SYSTEM SHALL report hint-first compliance, attempt-check accuracy, reading level and safety results per subject tutor and exit non-zero if a target in NFR-009 or NFR-011 is missed.
   - AC-014.3: WHEN a contributor runs the benchmark command against a running hub THE SYSTEM SHALL report p50 and p90 time to first visible reply for text and photo questions with 1 and with 5 simultaneous students.
-  - AC-014.4: WHEN the evaluation or benchmark finishes THE SYSTEM SHALL write a report file with the model tag, hub configuration and date.
+  - AC-014.4: WHEN the evaluation or benchmark finishes THE SYSTEM SHALL write a report file with the model tag and digest, judge model, hub configuration and date.
+  - AC-014.5: THE SYSTEM SHALL tag each evaluation case with the acceptance criteria it proves, including at least AC-004.4, AC-004.5, AC-005.1 … AC-005.3, AC-006.8 and AC-010.1 … AC-010.4.
 
 ### REQ-015: Suggest the right subject tutor
 - Story: As a student, I want the hub to notice when I've asked the wrong subject tutor, so that I get the right kind of help.
@@ -196,26 +199,26 @@ configuration unless stated otherwise.
   - AC-017.1: WHEN the hub is started without the online demo option THE SYSTEM SHALL not open any tunnel or make any outbound connection (NFR-003).
   - AC-017.2: WHEN the operator starts the hub with the online demo option and the hub has internet THE SYSTEM SHALL open a temporary public HTTPS link to the hub and print it as a QR code that carries an access token, together with a warning that traffic passes through a third party (Cloudflare) and that the link is for demos, not for students' everyday use.
   - AC-017.3: IF a request arrives through the online demo link without a valid access token (in the link or in the cookie set from it) THEN THE SYSTEM SHALL refuse it with a "scan the QR code again" page.
-  - AC-017.4: WHEN a request arrives through the online demo link THE SYSTEM SHALL treat it as a remote request, never as a request from the hub itself.
+  - AC-017.4: WHEN a request arrives through the online demo link THE SYSTEM SHALL treat it as a remote request, never as a request from the hub itself, and SHALL refuse the teacher pages.
   - AC-017.5: WHILE the online demo link is active THE SYSTEM SHALL show an "Online demo" notice on every student page.
   - AC-017.6: IF the online demo link drops THEN THE SYSTEM SHALL open a new one and print its QR code; IF the hub has no internet THEN THE SYSTEM SHALL keep serving on the hub Wi-Fi and print that the online demo link is unavailable.
-  - AC-017.7: WHEN the operator starts the hub with an option to rotate the access token THE SYSTEM SHALL issue a new token so that earlier QR codes stop working.
+  - AC-017.7: WHEN the hub starts in online demo mode THE SYSTEM SHALL issue a new access token, so QR codes from earlier runs (for example in a demo video) stop working; the cookie set from the token SHALL last only until the hub stops, and the token SHALL be removed from the address bar after the first request.
 
 ## Non-functional requirements
 | ID | Category | Requirement (measurable) | Verification |
 |---|---|---|---|
 | NFR-001 | Security | The web app listens only on the hub's LAN interface(s) and loopback; the model runtime API listens on loopback only and is unreachable from student devices; the teacher page requires the PIN (REQ-013); every input has the size limits stated in the ACs; session identifiers are random with ≥ 128 bits of entropy; no secrets in the repository; dependencies pinned in `uv.lock`; `pip-audit` reports no known vulnerabilities at release. | Port scan from a second device on the hub network; unit tests for limits and session IDs; CI `pip-audit` and gitleaks |
-| NFR-002 | Privacy / data classification | Applies in hub mode (the default); in online demo mode (REQ-017) traffic passes Cloudflare's edge, which the start warning states. Data classes: nickname (personal, low), messages and images (personal, may contain minors' handwriting or faces: confidential). Messages and images are kept in memory only, never written to disk, logs or reports; nothing is kept after session end, 30 min inactivity or hub restart (REQ-011); logs and teacher insights contain no message text, images or nicknames; 0 outbound network connections in operation. | Tests asserting no file writes for session data; log review of a full test session; outbound traffic capture during the offline test |
-| NFR-003 | Offline operation | In hub mode (the default), 100% of student, teacher and operator features work with the upstream internet disconnected after setup; pages load no resources from outside the hub (no CDNs, external fonts or analytics). | End-to-end test run with network disabled; automated check that served pages reference only hub-local URLs |
+| NFR-002 | Privacy / data classification | Applies in hub mode (the default); in online demo mode (REQ-017) traffic passes Cloudflare's edge, which the start warning states. Data classes: nickname (personal, low), messages and images (personal, may contain minors' handwriting or faces: confidential). Messages and images are kept in memory only, never written to disk (including upload temp files), logs or reports; the operator guide tells operators to turn swap off or use encrypted swap and to keep Ollama debug logging off; nothing is kept after session end, 30 min inactivity or hub restart (REQ-011); logs and teacher insights contain no message text, images or nicknames; 0 outbound network connections from the OpenTutor and Ollama processes in operation. | Tests asserting no file writes for session data, including a 9 MB upload creating no temp file; log review of a full test session; outbound traffic capture during the offline test |
+| NFR-003 | Offline operation | In hub mode (the default), 100% of student, teacher and operator features work with the upstream internet disconnected after setup; pages load no resources from outside the hub (no CDNs, external fonts or analytics). | End-to-end test run with network disabled; outbound capture filtered to the OpenTutor and Ollama processes; automated check that served pages reference only hub-local URLs |
 | NFR-004 | Availability / robustness | During a 2-hour session with 5 simulated students, the web app does not crash and ≥ 99% of requests complete with a reply or a defined error message; a model error or timeout affects only that request; the hub restarts and serves again within 60 s of the start command. | 2-hour soak test with the benchmark tool; fault-injection test with the model runtime stopped |
-| NFR-005 | Performance | Time to first visible reply token, measured on the reference hub with one active student: text question ≤ 5 s p90, photo question ≤ 15 s p90. With 5 simultaneous students, including queue wait: ≤ 30 s p90. Pages load in ≤ 2 s on the hub Wi-Fi; each student page transfers ≤ 300 KB uncompressed, excluding the student's own photo. | Benchmark command (AC-014.3); page-weight check in CI |
+| NFR-005 | Performance | "First visible reply" = the first `token` event received by the client. Measured on the reference hub with one active student: text question ≤ 5 s p90, photo question ≤ 15 s p90. With 5 simultaneous students (3 text, 2 photo) at the parallel setting chosen in T-001, including queue wait: ≤ 30 s p90. Pages load in ≤ 2 s on the hub Wi-Fi; each student page transfers ≤ 300 KB uncompressed, excluding the student's own photo. | Benchmark command (AC-014.3); page-weight check in CI |
 | NFR-006 | Capacity | 15 connected sessions and 5 simultaneously active students on the reference hub; the web app process uses ≤ 1 GB RAM under that load (the model runtime's memory is measured separately and recorded in the benchmark report). | Load test; memory sampling during the soak test |
 | NFR-007 | Cost | €0 running cost: no paid APIs or services; runs on the reference hardware (Linux laptop, 64 GB RAM, dedicated GPU); the README states minimum hardware measured by the benchmark. | Dependency review; benchmark report |
 | NFR-008 | Observability | Structured (JSON) logs on the console and in a local rotating log file (≤ 50 MB total): request ID, session ID (not nickname), subject tutor, queue wait, time to first token, total time, outcome and error type; no message content (NFR-002). | Unit tests for the log format; log review in the soak test |
-| NFR-009 | Compliance / child safety | Data minimisation by design (GDPR principles applied even though no data is stored); no tracking or profiling; the student pages show "AI can make mistakes — check with your teacher" and a one-line privacy notice; the README gives operators a short supervision and privacy checklist; the safety ACs of REQ-010 pass on a safety test set of ≥ 30 prompts with 100% refusals for harmful requests. | Safety test set run by the evaluation command; README review |
+| NFR-009 | Compliance / child safety | Data minimisation by design (GDPR principles applied even though no data is stored); no tracking or profiling; the student pages show "AI can make mistakes — check with your teacher" and a one-line privacy notice; the README gives operators a short supervision and privacy checklist; on a safety test set of ≥ 30 prompts: 100% refusals for harmful requests (AC-010.2), 100% of injection attempts resisted (AC-010.3), personal details never repeated (AC-010.4, 100%), off-topic requests declined ≥ 90% (AC-010.1); the README includes the operator supervision checklist. | Safety test set run by the evaluation command; README review |
 | NFR-010 | Accessibility / device support | Student pages meet WCAG 2.2 AA; usable at 320 px width without horizontal scrolling; touch targets ≥ 24×24 px; work on Chrome for Android 100+ and Safari on iOS 15+ without installing anything. | Automated accessibility check (axe) in CI; manual test on one Android and one iOS device |
-| NFR-011 | Model output quality | On the evaluation set (REQ-014): hint-first compliance ≥ 95% per subject tutor; attempt-check accuracy ≥ 90% for Maths and ≥ 85% for English language and Science; tutor replies at a Flesch–Kincaid grade level ≤ 8 on average; a change to a model, prompt or tutor definition is merged only if these targets still pass. | Evaluation command (AC-014.2) |
-| NFR-012 | Maintainability / open source | CI runs lint, format check, strict type check and tests without network or model access; ≥ 80% line coverage of application code; a contributor guide explains how to add a subject tutor and run the evaluation. | CI; review of the contributor guide by someone outside the team |
+| NFR-011 | Model output quality | On the evaluation set (REQ-014): hint-first compliance ≥ 95% per subject tutor, where a reply "reveals the final answer" if it contains the case's normalised expected answer or the judge model (named in the report, temperature 0, rubric in `evals/judge.md`) rules that it does; attempt-check accuracy ≥ 90% for Maths and ≥ 85% for English language and Science; tutor replies at a Flesch–Kincaid grade level ≤ 8 on average; from task T-023 onwards (when the evaluation harness exists), a change to a model, prompt or tutor definition is merged only if these targets still pass. | Evaluation command (AC-014.2) |
+| NFR-012 | Maintainability / open source | CI runs lint, format check, strict type check, tests (without network or model access), `pip-audit` and gitleaks; ≥ 80% line coverage of application code, enforced by the test run; a contributor guide explains how to add a subject tutor and run the evaluation. | CI; review of the contributor guide by someone outside the team |
 
 ## Out of scope
 <!-- Requirements considered and rejected for this version, with the reason. -->

@@ -25,7 +25,11 @@ hint from local Gemma 4 — through CI.
     library; on the hub, measure for each: image input works, JSON-schema `format` output
     validates against a Pydantic model, time to first token (text and photo, 1 and 5
     parallel requests, `OLLAMA_NUM_PARALLEL` 1/2/4), VRAM/RAM use; record GPU model and
-    VRAM; check whether an analysis call before the first hint keeps photo latency ≤ 15 s.
+    VRAM; check whether an analysis call before the first hint keeps photo latency ≤ 15 s;
+    check the hotspot: access-point mode with 15 phones connected, client isolation
+    (`802-11-wireless.ap-isolation`) and WPA3 support; measure restart time including
+    model warm-up (NFR-004); confirm Ollama keeps request images out of its logs and disk
+    with debug logging off.
   - Done when: the report lists measured numbers per model and a recommended default tag,
     digest and parallel setting; ADR-0004 and design.md updated with the outcome; Q-1 and
     Q-3 closed in product.md.
@@ -37,23 +41,28 @@ hint from local Gemma 4 — through CI.
     pydantic-settings, ollama, pillow, sympy, segno — each checked for maintenance and
     license), `src/opentutor/{config.py,app.py,cli.py,model/}` with a fake model backend,
     `src/opentutor/web/{templates,static}`, `opentutor.toml` example; root ruff config
-    excludes `tutor-ipad/` (it has its own toolchain); fix the template's lint error.
+    excludes `tutor-ipad/` (it has its own toolchain); fix the template's lint error;
+    coverage gate `--cov-fail-under=80` in `pyproject.toml`; base security from day one:
+    security headers and CSP without inline scripts, `Origin` check, JSON log format
+    without content, text-only rendering of model output and nicknames in the client.
   - Done when: `uv run opentutor start --dev` serves the join page on 127.0.0.1 with the
     fake backend; root checks pass locally and in CI (currently red on `main`: 5 lint
-    errors, 3 files to reformat); a test proves the app never binds `0.0.0.0`.
+    errors, 3 files to reformat); tests prove the app never binds `0.0.0.0`, the CSP and
+    headers are set, and log lines carry no message text.
 
 - [ ] T-003: Join, sessions and Finish
   - Requirements: REQ-001, REQ-011
   - Depends on: T-002
   - Scope: session store (in memory, 15-session cap, 30-min expiry sweep), cookie,
-    join page, Finish action
-  - Done when: tests for AC-001.1 … AC-001.6 and AC-011.1 … AC-011.4 pass; session IDs
+    join page, Finish action, per-address limits
+  - Done when: tests for AC-001.1 … AC-001.7 and AC-011.1 … AC-011.4 pass; session IDs
     have ≥ 128 bits of entropy (unit test).
 
 - [ ] T-004: Subject tutor folders and subject list
   - Requirements: REQ-008, REQ-002
   - Depends on: T-002
-  - Scope: tutor registry with Pydantic validation (`extra="forbid"`), `tutors/maths`,
+  - Scope: tutor registry with Pydantic validation (`extra="forbid"`), fixed `topics`
+    list per tutor, `tutors/maths`,
     `tutors/english-language`, `tutors/science` (first rubrics and examples), subject
     list page; pattern from `tutor-ipad` `modes.py` (design.md, Reuse)
   - Done when: tests for AC-008.1 … AC-008.6 and AC-002.1 … AC-002.3 pass.
@@ -63,8 +72,9 @@ hint from local Gemma 4 — through CI.
   - Depends on: T-001, T-003, T-004
   - Scope: `prompts/core.md` (hint ladder, simple English, untrusted-content rules),
     prompt builder with section merge (pattern from `tutor-ipad` `tutor/base.py`), Ollama
-    model client, `POST /api/messages` NDJSON stream, chat page with quick actions,
-    client stream reader
+    model client with call limits (60 s first output, 120 s total, max length), `POST
+    /api/messages` NDJSON stream, chat page that resumes on reload, quick actions, client
+    stream reader
   - Done when: tests for AC-003.1 … AC-003.3 pass with the fake backend; a manual run on
     the hub shows a streamed nudge from Gemma 4 on a phone over the hotspot; CI green.
 
@@ -80,11 +90,12 @@ hint from local Gemma 4 — through CI.
 - [ ] T-007: Photo questions
   - Requirements: REQ-004, REQ-015 (analysis field only), NFR-002 (images)
   - Depends on: T-005
-  - Scope: camera/gallery input, client-side downscale, image pipeline (type/size checks,
+  - Scope: camera/gallery input, client-side downscale, in-memory upload parsing with
+    `Content-Length` and streaming caps, image pipeline (type/size checks,
     Pillow pixel limit, EXIF orientation fix and metadata removal, downscale), structured
     `ExerciseAnalysis` call, notices for unreadable/several exercises
-  - Done when: tests for AC-004.1 … AC-004.6 pass, including a test that no image bytes
-    reach disk or logs; photo flow works on a real phone over plain HTTP.
+  - Done when: tests for AC-004.1 … AC-004.6 pass, including tests that a 9 MB upload
+    creates no temp file and no image bytes reach disk or logs; photo flow works on a real phone over plain HTTP.
 
 - [ ] T-008: Hint ladder, full solution and context budget
   - Requirements: REQ-005 (all ACs)
@@ -105,15 +116,16 @@ hint from local Gemma 4 — through CI.
   - Requirements: REQ-006 (AC-006.6 … AC-006.9), ADR-0007
   - Depends on: T-009
   - Scope: adapt `tutor-ipad` `checkers/math.py` (source named in a header comment):
-    allow-list tokenizer → `parse_expr`, step equivalence, equation solutions, worker
-    process with 2-s limit, merge with the model explanation
-  - Done when: tests for AC-006.6 … AC-006.9 pass, plus hostile-input tests (e.g.
+    allow-list tokenizer → `parse_expr` (explicit `local_dict`, empty globals,
+    `evaluate=False`), step equivalence, equation solutions, worker process with resource
+    limits and a 2-s limit (kill and respawn), merge with the model explanation
+  - Done when: tests for AC-006.6 … AC-006.10 pass, plus hostile-input tests (e.g.
     `__import__`, attribute access, huge exponents) that are rejected or time out without
     running code.
 
 - [ ] T-011: Practice sets
   - Requirements: REQ-007
-  - Depends on: T-009
+  - Depends on: T-009, T-010
   - Scope: `PracticeSet` schema (exactly 3), generation with one retry, per-exercise
     checking (uses T-009/T-010)
   - Done when: tests for AC-007.1 … AC-007.5 pass.
@@ -124,7 +136,17 @@ hint from local Gemma 4 — through CI.
   - Scope: safety and injection sections of `prompts/core.md`, safety prompt set (≥ 30
     prompts incl. injection-in-photo cases), privacy notice and mistakes notice on pages
   - Done when: tests for AC-010.1 … AC-010.4 pass with the fake backend (rules present in
-    every prompt, notices rendered); the safety set runs in T-014.
+    every prompt, notices rendered); the safety set is in the evaluation harness (T-023)
+    and meets NFR-009 on the hub.
+
+- [ ] T-023: Minimal evaluation harness (eval gate starts here)
+  - Requirements: REQ-014 (AC-014.2, AC-014.4 partial), NFR-011
+  - Depends on: T-008
+  - Scope: `opentutor eval` with the hint-first scorer (normalised expected-answer match
+    + judge rubric `evals/judge.md`, judge model named in the report, temperature 0),
+    5 exercises per tutor, report file, exit code; pattern from `tutor-ipad` `judge.py`
+  - Done when: the command runs on the hub and gates hint-first compliance; from this task
+    on, prompt, tutor and model changes need a passing report (AGENTS.md).
 
 ## Milestone 3: Operations, quality and hackathon release
 
@@ -133,20 +155,23 @@ hint from local Gemma 4 — through CI.
   - Depends on: T-005
   - Scope: `opentutor setup` (deps check, `ollama pull`, digest record), `opentutor start`
     (runtime/model/digest checks, refuse if Ollama listens beyond loopback, bind to
-    hotspot IP, warm-up, address + QR via `segno`), README operator guide (NetworkManager
-    hotspot, firewall rule, offline USB copy, Gemma license — Q-5)
+    hotspot IP and loopback via pre-created sockets, warm-up, address + QR via `segno`),
+    README operator guide (NetworkManager hotspot with client isolation and WPA3 where
+    possible, firewall rule, swap off or encrypted, Ollama debug logging off, Android
+    "no internet" prompt, offline USB copy, supervision checklist, Gemma license — Q-5)
   - Done when: tests for AC-012.1 … AC-012.7 pass (with fakes for Ollama and network
-    interfaces); a person outside the team sets up a hub from the README in ≤ 30 min.
+    interfaces).
 
 - [ ] T-014: Evaluation set and `opentutor eval`
   - Requirements: REQ-014 (AC-014.1, AC-014.2, AC-014.4), NFR-009, NFR-011
-  - Depends on: T-009, T-011, T-012
-  - Scope: ≥ 20 exercises per tutor (≥ 5 as images) with answers and sample attempts;
-    scorers for hint-first compliance, verdict accuracy, reading level and safety
-    refusals; thresholds file; report files; model tests skipped unless
-    `RUN_MODEL_TESTS=1` (pattern from `tutor-ipad` `judge.py`)
-  - Done when: `opentutor eval` runs on the hub, writes a report and exits non-zero when
-    a target is missed; the first report meets NFR-011 or the gaps are filed as tasks.
+  - Depends on: T-023, T-009, T-011, T-012
+  - Scope: extend T-023 to ≥ 20 exercises per tutor (≥ 5 as images) with answers and
+    sample attempts, cases tagged by AC (AC-014.5); scorers for verdict accuracy, reading
+    level and the safety set; thresholds file; model tests skipped unless
+    `RUN_MODEL_TESTS=1`
+  - Done when: `opentutor eval` exits non-zero when an NFR-009 or NFR-011 target is
+    missed, and a report on the hub meets them (prompt work continues under this task
+    until it does).
 
 - [ ] T-015: Benchmark and soak test
   - Requirements: AC-014.3, NFR-004, NFR-005, NFR-006
@@ -159,9 +184,9 @@ hint from local Gemma 4 — through CI.
 - [ ] T-016: Security hardening, privacy and offline verification
   - Requirements: NFR-001, NFR-002, NFR-003, NFR-008
   - Depends on: T-007, T-013
-  - Scope: security headers and CSP, `Origin` check, JSON log format without content,
-    rotating log file, offline checklist (upstream disconnected, outbound capture), port
-    scan from a second device
+  - Scope: verification of what T-002…T-013 built: rotating log file, offline checklist
+    (upstream disconnected, outbound capture filtered to the OpenTutor and Ollama
+    processes), port scan from a second device, hotspot client isolation check
   - Done when: header/log/no-disk-write tests pass; the offline checklist and port scan
     results are recorded in `docs/spikes/` (or the release notes); `security-auditor`
     review has no open Blockers.
@@ -181,6 +206,12 @@ hint from local Gemma 4 — through CI.
   - Scope: demo script with pre-tested exercises, demo video, README polish (setup, demo,
     license, Gemma 4 usage), release tag prepared for the human
   - Done when: live demo runs with internet off; repo public with README and video link.
+
+- [ ] T-024: Independent setup walkthrough
+  - Requirements: G-5, product success metric "Setup time"
+  - Depends on: T-013
+  - Done when: a person outside the team sets up a hub from the README in ≤ 30 min and
+    the README is fixed where they got stuck.
 
 ## Milestone 4: Should / Could
 
@@ -203,10 +234,17 @@ hint from local Gemma 4 — through CI.
   - Requirements: REQ-017, ADR-0006
   - Depends on: T-013
   - Scope: adapt `tutor-ipad` `pairing.py` (`QuickTunnel`, `TunnelGate`, QR helpers) with
-    the Linux `cloudflared` asset and checksum; `start --online-demo`, `--new-token`;
-    tunnel requests treated as remote; on-page notice
+    the Linux `cloudflared` asset and checksum (`setup --online-demo`); `start
+    --online-demo` with a dedicated 127.0.0.1:8001 listener, per-start in-memory token,
+    session-lifetime cookie, teacher pages refused; on-page notice
   - Done when: tests for AC-017.1 … AC-017.7 pass (fake `cloudflared` process); a manual
     run streams a full reply through a real quick tunnel to a phone on mobile data.
+
+## Hackathon cut [ASSUMPTION A-7]
+Proposed for the 16:30 submission, in this order: T-001 (short: one model, text + photo
+latency) → T-002 → T-003 → T-004 → T-005 → T-007 → T-008 → T-009 → T-013 (start command
+and README only) → T-022. Two people can work in parallel from T-002 (worktree per
+person). Everything else continues after the deadline.
 
 ## Coverage check
 | Requirement | Tasks |
@@ -224,11 +262,11 @@ hint from local Gemma 4 — through CI.
 | REQ-011 | T-003 |
 | REQ-012 | T-002, T-013 |
 | REQ-013 | T-018 |
-| REQ-014 | T-014, T-015 |
+| REQ-014 | T-023, T-014, T-015 |
 | REQ-015 | T-007, T-020 |
 | REQ-016 | T-019 |
 | REQ-017 | T-021 |
-| NFR-001 | T-002, T-013, T-016 |
+| NFR-001 | T-002, T-013, T-016 (pip-audit and gitleaks already run in CI) |
 | NFR-002 | T-007, T-016 |
 | NFR-003 | T-016 |
 | NFR-004 | T-006, T-015 |
@@ -236,7 +274,7 @@ hint from local Gemma 4 — through CI.
 | NFR-006 | T-001, T-015 |
 | NFR-007 | T-013 |
 | NFR-008 | T-016 |
-| NFR-009 | T-012, T-014 |
+| NFR-009 | T-012, T-013 (supervision checklist), T-014 |
 | NFR-010 | T-017 |
-| NFR-011 | T-014 |
-| NFR-012 | T-002 |
+| NFR-011 | T-023, T-014 |
+| NFR-012 | T-002 (coverage gate) |

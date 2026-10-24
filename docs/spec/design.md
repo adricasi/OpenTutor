@@ -66,7 +66,7 @@ flowchart LR
 ## Components
 | Component | Responsibility | Tech / local runtime | Requirements |
 |---|---|---|---|
-| Web app (HTTP layer) | Pages, JSON/NDJSON endpoints, cookies, input limits, security headers | FastAPI on Uvicorn, **1 worker**, bound to the hotspot IP and 127.0.0.1 | REQ-001…REQ-007, REQ-011, NFR-001 |
+| Web app (HTTP layer) | Pages, JSON/NDJSON endpoints, cookies, input limits, rate limits, security headers | FastAPI on one `uvicorn.Server` (**1 worker**) serving pre-created sockets: hotspot IP:8000 and 127.0.0.1:8000, plus 127.0.0.1:8001 for the tunnel in online demo mode | REQ-001…REQ-007, REQ-011, NFR-001 |
 | Pages and client script | Join, subject list, chat, teacher pages; camera/gallery input; client-side image downscale; streaming reader; quick actions; queue position | Jinja2 templates, one CSS file, one vanilla JS file; no framework, no CDN | REQ-001…REQ-007, REQ-009, NFR-003, NFR-005, NFR-010 |
 | Session store | Create/resume/delete sessions, nickname uniqueness, 15-session cap, 30-min idle expiry sweep | Python dict + asyncio task, in memory | REQ-001, REQ-011, NFR-002, NFR-006 |
 | Tutor registry | Load and validate `tutors/<id>/tutor.toml` + `rubric.md` at start; enabled list | `tomllib` (stdlib) + Pydantic models with `extra="forbid"` | REQ-002, REQ-008 |
@@ -75,10 +75,10 @@ flowchart LR
 | Request queue | FIFO across all sessions; N parallel workers (N = Ollama parallel setting); positions; one in-flight request per session; 120-s queue timeout; 60-s model timeout | asyncio | REQ-009, AC-003.3, NFR-004 |
 | Maths checker | Parse plain-text Maths attempts, check step equivalence and equation solutions, return verdict + first wrong step or "can't tell" | sympy (adapted from `tutor-ipad` `checkers/math.py`), allow-list tokenizer, worker process, 2-s limit | AC-006.6 … AC-006.9, ADR-0007 |
 | Model client | Stream chat, structured calls, image input, health check, model/digest check | Official `ollama` Python client (async) over loopback HTTP [to confirm in T-001] | REQ-003…REQ-007, REQ-012 |
-| Image pipeline | Validate type/size, decode safely, strip metadata, downscale to the model's input size, keep bytes in memory | Pillow, with pixel-count limit | REQ-004, NFR-001, NFR-002 |
-| Teacher insights | Aggregate counters per tutor/topic; PIN check with lockout | In memory | REQ-013 |
+| Image pipeline | Reject bodies over 11 MB by `Content-Length` and a streaming byte cap before parsing; parse the upload in memory (multipart spooling raised above the cap, so nothing goes to a temp file); validate type/size, decode safely, fix EXIF orientation and drop metadata, downscale to the model's input size | Pillow, with pixel-count limit | REQ-004, NFR-001, NFR-002 |
+| Teacher insights | Aggregate counters per tutor and topic (topics only from the tutor's fixed `topics` list, else "other"); PIN check with per-address lockout; served on loopback unless allowed | In memory | REQ-013 |
 | Hub CLI | `setup` (deps + model pull + digest record + pinned `cloudflared`), `start` (checks, bind, QR code, PIN, status line; `--online-demo`, `--new-token`), `eval`, `bench` | Python console script; typed settings with environment overrides (pydantic-settings, as in `tutor-ipad`); `segno` for QR codes (used by `tutor-ipad`) | REQ-012, REQ-014, REQ-016, REQ-017 |
-| Online demo tunnel *(opt-in)* | Run `cloudflared` quick tunnel, parse its URL, reopen if it drops; token gate middleware (token in QR → HttpOnly cookie); mark tunnel requests as remote | Adapted from `tutor-ipad` `pairing.py` (`QuickTunnel`, `TunnelGate`, `with_token`, `print_qr`), Linux binary added | REQ-017, ADR-0006 |
+| Online demo tunnel *(opt-in)* | Run `cloudflared` quick tunnel to a **dedicated listener 127.0.0.1:8001** (every request on it is remote), parse its URL, reopen if it drops; token gate (per-start token in QR → session-lifetime HttpOnly `Secure` cookie, `?k=` stripped by redirect); teacher pages refused on this listener | Adapted from `tutor-ipad` `pairing.py` (`QuickTunnel`, `TunnelGate`, `with_token`, `print_qr`), Linux binary added | REQ-017, ADR-0006 |
 | Model runtime | Serve Gemma 4 on loopback with N parallel requests | Ollama (system service), `OLLAMA_HOST=127.0.0.1:11434`, `OLLAMA_NUM_PARALLEL=N` | ADR-0004 |
 | Evaluation and benchmark | Evaluation set, safety set, scorers, latency/soak runner, report files | Python scripts under `evals/`, run against the real model on the hub | REQ-014, NFR-005, NFR-009, NFR-011 |
 
@@ -91,9 +91,9 @@ All entities live in memory only (ADR-0005). Nothing below is persisted.
 | `Conversation` | `tutor_id`, `exercise`, `turns[]`, `hint_level` (0 none, 1 nudge, 2 hint, 3 next step, 4 full solution), `practice` | Replaced on subject switch or new exercise | Confidential (minors' content) |
 | `Exercise` | `text` (student text or text read from the image), `image` (downscaled bytes or none), `topic`, `exercise_count` | With its conversation | Confidential |
 | `Turn` | `role` (student/tutor), `intent`, `text`, `has_image`, `at` | With its conversation; oldest dropped first beyond the context budget, except the exercise | Confidential |
-| `TutorDefinition` | `id`, `name`, `description`, `enabled`, `checker` (`maths` or none), `examples[]`, rubric sections (`teaching`, `check`, `practice`) | Loaded at start from `tutors/<id>/` | Public (repository) |
+| `TutorDefinition` | `id`, `name`, `description`, `enabled`, `checker` (`maths` or none), `topics[]` (fixed list for insights), `examples[]`, rubric sections (`teaching`, `check`, `practice`) | Loaded at start from `tutors/<id>/` | Public (repository) |
 | `CheckResult` *(maths checker)* | `decided: bool`, `verdict` (when decided), `first_error_step` (index + text), `reason` | Used for one verdict | — |
-| `ExerciseAnalysis` *(model output)* | `readable: bool`, `exercise_count: int`, `exercise_text: str`, `topic: str`, `suggested_tutor_id: str or null` | Copied into `Exercise` | — |
+| `ExerciseAnalysis` *(model output)* | `readable: bool`, `exercise_count: int`, `exercise_text: str`, `topic` (one of the tutor's `topics` or `other`, enforced by the JSON schema), `suggested_tutor_id: str or null` | Copied into `Exercise` | — |
 | `Verdict` *(model output)* | `verdict: correct / partly_correct / not_yet_correct`, `explanation`, `first_error_step` (nullable), `hint` (nullable) | Rendered, then kept as a turn | — |
 | `PracticeSet` *(model output)* | `exercises` (exactly 3 × `{number, text}`) | Until the next exercise | — |
 | `Insights` | per tutor: `topic → count`, `hints`, `verdicts by type`, `not_yet_correct by topic` | Until restart | Aggregated, no personal data |
@@ -109,10 +109,11 @@ not versioned). Non-stream errors use RFC 9457 problem JSON.
 | Method & path | Purpose | Notes |
 |---|---|---|
 | `GET /` | Join page, or redirect to subjects if the session cookie is valid | AC-001.1, AC-001.6 |
-| `POST /session` | `{nickname}` → set session cookie | 400 invalid format · 409 nickname in use · 503 hub full |
+| `POST /session` | `{nickname}` → set session cookie | 400 invalid format · 409 nickname in use · 429 too many sessions or attempts from this address · 503 hub full |
 | `DELETE /session` | Finish: delete session and data | AC-011.1 |
 | `GET /subjects` | Subject list | AC-002.1 |
-| `GET /chat/{tutor_id}` | Chat page; starts a new conversation with that tutor | AC-002.2, AC-002.3 |
+| `GET /chat/{tutor_id}` | Chat page; **resumes** the current conversation if it uses this tutor, otherwise shows the empty conversation for it | AC-001.6, AC-002.2 |
+| `POST /chat/{tutor_id}/new` | Start a new conversation with that tutor (also used on a tutor switch) | AC-002.3 |
 | `POST /api/messages` | Multipart: `intent` (`ask`, `new_exercise`, `hint`, `answer`, `check`, `practice`), `text` (optional), `image` (optional). Response: `application/x-ndjson` stream of events | 409 if a request is already in flight (AC-009.3) |
 | `GET /teacher` · `POST /teacher/login` · `GET /teacher/insights` | Teacher view, PIN login (separate cookie), aggregated JSON | REQ-013 |
 | `GET /healthz` | Liveness and model-runtime reachability | Loopback only |
@@ -127,15 +128,26 @@ not versioned). Non-stream errors use RFC 9457 problem JSON.
 **How intents map to model calls**
 | Intent | Trigger | Model call(s) |
 |---|---|---|
-| `new_exercise` | First message of a conversation, any message with a photo, or the "New exercise" action | 1) structured `ExerciseAnalysis` (unreadable → notice, AC-004.4; several → notice, AC-004.5; topic → insights; other tutor → notice, REQ-015). 2) streamed nudge (hint level 1). |
+| `new_exercise` | First message of a conversation, any message with a photo, or the "New exercise" action | **Photo:** 1) structured `ExerciseAnalysis` (unreadable → notice, AC-004.4; several → notice, AC-004.5; topic → insights; other tutor → notice, REQ-015), 2) streamed nudge (hint level 1). **Typed:** streamed nudge first (keeps the 5-s target); the topic is classified afterwards by a small structured call queued behind student requests. |
 | `ask` | Free-text follow-up | Streamed reply in context; hint-first rules apply |
 | `hint` | "Another hint" | Hint level + 1 (max 3: nudge → hint naming the rule → correct next step), streamed |
 | `answer` | "Show the answer" | Hint level 4: streamed worked solution + mistakes reminder (AC-005.3) |
-| `check` | "Check my answer" with text or photo | Maths tutor with typed attempt: maths checker first; if it decides, the verdict is fixed and the model only writes the explanation (AC-006.8). Otherwise structured `Verdict` from the model; retry once on invalid output (AC-006.4) |
+| `check` | "Check my answer" with text or photo | Maths tutor with **typed** attempt: maths checker first; if it decides, the verdict is fixed and the model only writes the explanation, without the checker's solution unless correct (AC-006.8). Photo attempts and undecided cases: structured `Verdict` from the model; retry once on invalid output (AC-006.4) |
 | `practice` | "Practice" | Structured `PracticeSet` (exactly 3); retry once (AC-007.4) |
 
 Whether a message is a new exercise is decided by deterministic rules (table above), not
 by the model.
+
+**Model call limits** (per model call, configurable): 60 s to first output, 120 s total,
+maximum reply length per intent (e.g. 400 tokens for hints, 900 for full solutions);
+hitting a limit ends that call with `error model_timeout` (AC-003.3).
+
+**Maths checker semantics** (ADR-0007): typed attempts only; equations are equivalent when
+they have the same solution set, expressions when their difference simplifies to zero;
+the chain starts from the exercise when the student typed it; all steps equivalent and
+the last step states the checker's solution → correct; all equivalent but unfinished →
+partly correct; a non-equivalent step → not yet correct at that step. When the exercise
+was read from a photo, the checker only judges step equivalence.
 
 **Subject tutor folder** (`tutors/maths/`, validated at start; pattern from
 `tutor-ipad/tutor-app/modes/`): `tutor.toml` with `id`, `name`, `description`, `enabled`,
@@ -149,17 +161,22 @@ notation such as `x^2` and `3/4` instead of LaTeX, untrusted-content handling) l
 - Trust boundary: the hub laptop. Student devices on the hub Wi-Fi are untrusted clients;
   the operator's console is trusted.
 - Identities: anonymous student sessions (random 256-bit cookie, `HttpOnly`,
-  `SameSite=Strict`, no `Secure` flag because the hub serves plain HTTP); a teacher role
+  `SameSite=Lax` — `Strict` may not be sent when a phone opens the QR link from the camera
+  app — plus the `Origin` check on state-changing requests; `Secure` only on the tunnel
+  listener, because the hub serves plain HTTP); a teacher role
   unlocked by a 6-digit PIN printed only on the operator console, separate cookie.
 - Access control: a session can only read and write its own conversation; teacher
   insights need the teacher cookie; `/healthz` answers only on loopback; no operator
-  actions over HTTP. A request is "local" only if it comes from loopback **and** carries
-  no Cloudflare headers (`cf-connecting-ip`, `cf-ray`) or `*.trycloudflare.com` host,
-  because tunnel traffic also arrives from 127.0.0.1 (AC-017.4).
-- Online demo mode (REQ-017): every tunnel request needs the access token (QR `?k=` →
-  HttpOnly `Secure` cookie, constant-time compare), adapted from `tutor-ipad`'s
-  `TunnelGate`; the token is stored in a git-ignored local file with mode 0600 and can be
-  rotated (`--new-token`).
+  actions over HTTP. Teacher pages answer on 127.0.0.1:8000 only unless the operator
+  allows the hub Wi-Fi [ASSUMPTION A-6]. Rate limits: ≤ 2 active sessions and ≤ 10 join
+  attempts per minute per client address.
+- Online demo mode (REQ-017): `cloudflared` forwards to a dedicated listener
+  (127.0.0.1:8001); every request on that listener is remote, whatever its headers, and
+  teacher pages and `/healthz` are refused there. Each request needs the access token
+  (QR `?k=` → redirect that strips it and sets a session-lifetime HttpOnly `Secure`
+  cookie; constant-time compare), adapted from `tutor-ipad`'s `TunnelGate`. The token is
+  generated at each start and held in memory only, so old QR codes (e.g. in a demo video)
+  stop working.
 - Secrets: none in the repository. The teacher PIN and session secrets are generated at
   start, held in memory, never logged (the PIN is printed once on the console).
 - Network exposure:
@@ -169,14 +186,19 @@ notation such as `x^2` and `3/4` instead of LaTeX, untrusted-content handling) l
     non-loopback address.
   - Setup documents a host firewall rule allowing only the web port on the hotspot
     interface.
-  - Plain HTTP on the LAN: accepted risk (out of scope in requirements.md) — the hotspot
-    uses WPA2 with a password, there is no internet route, and the content is low-value
-    homework chat. Camera capture uses `<input type="file" accept="image/*" capture>`,
+  - Hotspot: client isolation on (NetworkManager `802-11-wireless.ap-isolation`, support
+    checked in T-001) so phones can't reach or sniff each other directly; WPA3 where the
+    hardware supports it, else WPA2.
+  - Plain HTTP on the LAN: accepted risk (out of scope in requirements.md) — client
+    isolation, no internet route, low-value homework chat; classmates know the Wi-Fi
+    password, so the password alone is not counted as protection. Camera capture uses `<input type="file" accept="image/*" capture>`,
     which works without HTTPS.
 - Data protection: messages and images in memory only (ADR-0005); images re-encoded by
   Pillow, dropping EXIF/location metadata; logs carry session IDs, never nicknames or
   content (NFR-002, NFR-008); nothing is written to disk except the content-free log and
-  eval/benchmark reports on synthetic data.
+  eval/benchmark reports on synthetic data. Uploads never reach a temp file (Image
+  pipeline). The operator guide says to turn swap off (or use encrypted swap) and to keep
+  Ollama debug logging off, so images aren't paged out or logged outside the app.
 - Web hardening: `Content-Security-Policy: default-src 'self'; img-src 'self' blob: data:;
   frame-ancestors 'none'` with no inline scripts; `X-Content-Type-Options: nosniff`;
   `Referrer-Policy: no-referrer`; all model output and nicknames are inserted as text,
@@ -186,16 +208,17 @@ notation such as `x^2` and `3/4` instead of LaTeX, untrusted-content handling) l
 - Threats considered:
   | Threat | Mitigation |
   |---|---|
-  | Classmate floods the hub | 15-session cap, one in-flight request per session, input caps, queue timeout |
+  | Classmate floods the hub | 15-session cap, ≤ 2 sessions and ≤ 10 join attempts/min per address, one in-flight request per session, input caps, queue timeout |
+  | Upload spooled to disk by the multipart parser | In-memory parsing with spooling above the cap, `Content-Length` and streaming caps, no-temp-file test |
   | Prompt injection in a photo or message | No tools or actions for the model, so the impact is limited to its text; untrusted content delimited in user turns; core rules say to treat it as data; safety set includes injection cases (AC-010.3) |
   | Harmful or inappropriate output for minors | Core safety rules, REQ-010, safety eval at 100% refusal (NFR-009), mistakes reminder |
   | XSS via model output or nickname | Text-only rendering, nickname allow-list, CSP without inline scripts |
   | Direct use of the Ollama API from the LAN | Loopback binding + start-time check + firewall rule |
   | Malicious image (decompression bomb, parser bug) | 10 MB cap, Pillow pixel limit, re-encode, pinned/audited Pillow |
-  | Teacher PIN brute force | 5 tries then 5-minute lockout |
-  | Session hijack by sniffing on the hub Wi-Fi | WPA2 hotspot password; short-lived, content-only sessions; accepted residual risk |
-  | Tampered model or dependency | Model digest checked against config at start; `uv.lock`, `pip-audit`, gitleaks in CI; `cloudflared` pinned with SHA-256 |
-  | Code execution through the maths parser (`parse_expr` uses `eval`) | Allow-list tokenizer before parsing, length cap, worker process with 2-s limit, hostile-input tests (ADR-0007) |
+  | Teacher PIN brute force or lock-out by a student | Teacher view on loopback by default; 5 tries then 5-minute lockout per client address |
+  | Session hijack by sniffing on the hub Wi-Fi | Hotspot client isolation, WPA3 where possible; short-lived, content-only sessions; accepted residual risk |
+  | Tampered model or dependency | Model digest checked against config at start (trust on first use: the digest is recorded at the first pull); `uv.lock`, `pip-audit`, gitleaks in CI; `cloudflared` pinned with SHA-256 |
+  | Code execution or resource exhaustion through the maths parser (`parse_expr` uses `eval`) | Allow-list tokenizer (`.` only between digits; letters that are sympy objects — E, I, N, O, Q, S — excluded), `parse_expr` with an explicit `local_dict` of `Symbol`s, an empty global namespace plus allow-listed functions and `evaluate=False`; length cap; exponent-tower cap; worker process with `RLIMIT_AS`/`RLIMIT_CPU`, killed and respawned on the 2-s timeout; hostile-input tests (ADR-0007) |
   | Strangers on the internet reaching the hub (online demo mode) | Opt-in only, access token, on-page notice, tunnel requests never treated as local |
 
 ## Reliability and operations
@@ -217,16 +240,21 @@ notation such as `x^2` and `3/4` instead of LaTeX, untrusted-content handling) l
   files are versioned in git.
 
 ## Environments and deployment
-- Supported hub: Linux with NetworkManager (for the hotspot), 64 GB RAM, dedicated GPU
-  (model unconfirmed, Q-1), ~20 GB free disk for models; Python 3.12+ with `uv`; Ollama
+- Supported hub: Linux with NetworkManager (for the hotspot) and a Wi-Fi chipset that
+  supports access-point mode with ≥ 15 clients (checked in T-001), 64 GB RAM, dedicated
+  GPU (model unconfirmed, Q-1), ~20 GB free disk for models; online demo mode needs a
+  second network connection (Ethernet or a second Wi-Fi adapter) for internet while the
+  hotspot runs; Python 3.12+ with `uv`; Ollama
   installed as a service. Other operating systems: not supported in this version.
 - Development machines: any OS; a **fake model backend** (`OPENTUTOR_MODEL_BACKEND=fake`,
   recorded responses) lets the UI and tests run without Ollama or a GPU.
 - Setup (with internet, once): install Ollama (official instructions, handed to the
   operator) → `uv sync` → `opentutor setup` pulls the configured Gemma 4 tag, records
-  its digest and downloads the pinned `cloudflared` (for the optional demo link) → create the hotspot (`nmcli` steps in the README) → firewall rule.
+  its digest; `opentutor setup --online-demo` also downloads the pinned `cloudflared` → create the hotspot (`nmcli` steps in the README) → firewall rule.
   Offline copies (USB) of the model and wheels are documented as an alternative for slow
   venue internet.
+- Phones: the README tells students to stay connected when Android warns that the hub
+  Wi-Fi has no internet.
 - Start (offline): `opentutor start` → checks (runtime, model digest, loopback binding,
   interface) → warm-up → prints hub address, QR code and teacher PIN.
 - Configuration: one `opentutor.toml` (model tag, digest, parallel requests, bind

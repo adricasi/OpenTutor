@@ -48,8 +48,9 @@ uv run pip-audit                         # dependency vulnerabilities
 - Tests are named after the acceptance criterion they prove (`test_ac_006_2_...`).
 - Unit and API tests use the fake model backend; never call Ollama or the network in them.
   Model-quality checks run via `opentutor eval` on the hub (`RUN_MODEL_TESTS=1`).
-- Prompts are versioned files (`prompts/`, `tutors/<id>/rubric.md`); a prompt, tutor or
-  model change needs an `opentutor eval` report that meets NFR-011.
+- Prompts are versioned files (`prompts/`, `tutors/<id>/rubric.md`); once the evaluation
+  harness exists (task T-023), a prompt, tutor or model change needs an `opentutor eval`
+  report that meets NFR-009 and NFR-011.
 
 ## Domain rules
 - Hint first: never state the final answer before the student explicitly asks for it
