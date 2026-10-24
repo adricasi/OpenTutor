@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import io
 import logging
 import socket
 import sys
@@ -96,7 +97,15 @@ def warm_up(settings: Settings) -> None:
         print(f"  warning: model warm-up failed ({error}); the first question may be slow.")
 
 
+def utf8_output() -> None:
+    """Print UTF-8 so the QR code's block characters survive a Windows cp1252 console (AC-012.2)."""
+    for stream in (sys.stdout, sys.stderr):
+        if isinstance(stream, io.TextIOWrapper) and stream.encoding.lower() != "utf-8":
+            stream.reconfigure(encoding="utf-8")
+
+
 def main(argv: list[str] | None = None) -> int:
+    utf8_output()
     parser = argparse.ArgumentParser(prog="opentutor", description="OpenTutor homework hub")
     sub = parser.add_subparsers(dest="command", required=True)
     start = sub.add_parser("start", help="start the hub")
