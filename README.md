@@ -1,23 +1,52 @@
+<div align="center">
+
 # OpenTutor
 
-**A free, private homework tutor for a whole classroom, running on one laptop with no internet.**
+**Open-source, offline homework tutor for a whole classroom. One laptop, any phone, no internet.**
+
+[![ci-python](https://github.com/adricasi/opentutor/actions/workflows/ci-python.yml/badge.svg)](https://github.com/adricasi/opentutor/actions/workflows/ci-python.yml)
+[![security](https://github.com/adricasi/opentutor/actions/workflows/security.yml/badge.svg)](https://github.com/adricasi/opentutor/actions/workflows/security.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![python](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
+[![model](https://img.shields.io/badge/model-Gemma%204%20(local)-E0892F)](#the-model)
+[![offline](https://img.shields.io/badge/runs-100%25%20offline-2e7d32)](#architecture)
+
+[Quick start](#quick-start) · [Architecture](#architecture) · [How it works](#how-it-works) · [Run a hub](#run-a-hub-operator-guide) · [Hackathon submission](#hackathon-submission) · [Contributing](#contributing)
+
+</div>
 
 OpenTutor turns one Linux laptop running **Gemma 4** locally into a homework tutor that
 students reach from any phone browser over the laptop's own Wi-Fi: no app, no account, no
 mobile data. Students photograph or type an exercise and get step-by-step hints (never the
 answer unless they ask), checks of their own attempts and practice exercises. Nothing
 leaves the hub: messages and photos live in memory and are deleted when the student taps
-**Finish**.
+**Finish**. Deterministic checks decide maths verdicts; the model explains and guides.
 
 Built for the students who need it most: families without home internet or prepaid data,
 who can't pay for tutoring. Specification: [docs/spec](docs/spec/) · decisions:
 [docs/adr](docs/adr/).
 
+> **Disclaimer.** OpenTutor gives homework help only: no legal, medical, tax or money advice.
+> AI can make mistakes; students are told to check with their teacher. It is a hackathon
+> project, not a replacement for teachers.
+
 > **Two front ends, one project.** The phone hub (this README) and the
 > [iPad handwriting tutor](#ipad-handwriting-tutor-ipad-tutor) in `ipad-tutor/`, which runs as its own
 > service on an Apple-silicon Mac ([ADR-0008](docs/adr/0008-integrate-ipad-tutor-as-a-companion-service.md)).
 
-**Contents:** [Quick start](#quick-start) · [Architecture](#architecture) · [Privacy and security](#privacy-and-security) · [Hackathon submission](#hackathon-submission) · [How it works](#how-it-works) · [Run a hub](#run-a-hub-operator-guide) · [The model](#the-model) · [Develop](#develop) · [Contributing](#contributing) · [License](#license)
+## Table of contents
+- [Quick start](#quick-start)
+- [Architecture](#architecture)
+- [Privacy and security](#privacy-and-security)
+- [Hackathon submission](#hackathon-submission)
+- [How it works](#how-it-works)
+- [Run a hub (operator guide)](#run-a-hub-operator-guide)
+- [What expertise is inside, and where it comes from](#what-expertise-is-inside-and-where-it-comes-from)
+- [The model](#the-model)
+- [Proof that it works better with our part](#proof-that-it-works-better-with-our-part)
+- [Errors, limits and disclaimer](#errors-limits-and-disclaimer)
+- [iPad handwriting tutor](#ipad-handwriting-tutor-ipad-tutor)
+- [Develop](#develop) · [Contributing](#contributing) · [Team](#team) · [License](#license)
 
 ## Quick start
 Try the interface on any computer, with a fake model (no GPU, no download):
