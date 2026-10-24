@@ -1,0 +1,3089 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "InkTutorProtocol",
+  "type": "object",
+  "properties": {
+    "AXElement": {
+      "$ref": "#/$defs/AXElement"
+    },
+    "AXSnapshot": {
+      "$ref": "#/$defs/AXSnapshot"
+    },
+    "Anchor": {
+      "$ref": "#/$defs/Anchor"
+    },
+    "BBox": {
+      "$ref": "#/$defs/BBox"
+    },
+    "CheckResult": {
+      "$ref": "#/$defs/CheckResult"
+    },
+    "ClientMessage": {
+      "$ref": "#/$defs/ClientMessage"
+    },
+    "DisplayInfo": {
+      "$ref": "#/$defs/DisplayInfo"
+    },
+    "DoneWhen": {
+      "$ref": "#/$defs/DoneWhen"
+    },
+    "ErrorMsg": {
+      "$ref": "#/$defs/ErrorMsg"
+    },
+    "FeedbackEvent": {
+      "$ref": "#/$defs/FeedbackEvent"
+    },
+    "FeedbackMsg": {
+      "$ref": "#/$defs/FeedbackMsg"
+    },
+    "GhostAction": {
+      "$ref": "#/$defs/GhostAction"
+    },
+    "Graph": {
+      "$ref": "#/$defs/Graph"
+    },
+    "GraphEdge": {
+      "$ref": "#/$defs/GraphEdge"
+    },
+    "GraphNode": {
+      "$ref": "#/$defs/GraphNode"
+    },
+    "GuideControl": {
+      "$ref": "#/$defs/GuideControl"
+    },
+    "GuideGoal": {
+      "$ref": "#/$defs/GuideGoal"
+    },
+    "GuidePlan": {
+      "$ref": "#/$defs/GuidePlan"
+    },
+    "GuidePlanMsg": {
+      "$ref": "#/$defs/GuidePlanMsg"
+    },
+    "GuideStatusMsg": {
+      "$ref": "#/$defs/GuideStatusMsg"
+    },
+    "GuideStep": {
+      "$ref": "#/$defs/GuideStep"
+    },
+    "HintRequest": {
+      "$ref": "#/$defs/HintRequest"
+    },
+    "Homework": {
+      "$ref": "#/$defs/Homework"
+    },
+    "HomeworkCreate": {
+      "$ref": "#/$defs/HomeworkCreate"
+    },
+    "HomeworkProgress": {
+      "$ref": "#/$defs/HomeworkProgress"
+    },
+    "HomeworkPublic": {
+      "$ref": "#/$defs/HomeworkPublic"
+    },
+    "InkUpdate": {
+      "$ref": "#/$defs/InkUpdate"
+    },
+    "InputEvent": {
+      "$ref": "#/$defs/InputEvent"
+    },
+    "LearningLog": {
+      "$ref": "#/$defs/LearningLog"
+    },
+    "LineCorrection": {
+      "$ref": "#/$defs/LineCorrection"
+    },
+    "LogLine": {
+      "$ref": "#/$defs/LogLine"
+    },
+    "MarkDismiss": {
+      "$ref": "#/$defs/MarkDismiss"
+    },
+    "OverlayEvent": {
+      "$ref": "#/$defs/OverlayEvent"
+    },
+    "OverlayMsg": {
+      "$ref": "#/$defs/OverlayMsg"
+    },
+    "PageRef": {
+      "$ref": "#/$defs/PageRef"
+    },
+    "Point2": {
+      "$ref": "#/$defs/Point2"
+    },
+    "ProgressSummary": {
+      "$ref": "#/$defs/ProgressSummary"
+    },
+    "QuestionAnswer": {
+      "$ref": "#/$defs/QuestionAnswer"
+    },
+    "Reading": {
+      "$ref": "#/$defs/Reading"
+    },
+    "ReadingLine": {
+      "$ref": "#/$defs/ReadingLine"
+    },
+    "ReadingMsg": {
+      "$ref": "#/$defs/ReadingMsg"
+    },
+    "RuntimeMsg": {
+      "$ref": "#/$defs/RuntimeMsg"
+    },
+    "RuntimeStatus": {
+      "$ref": "#/$defs/RuntimeStatus"
+    },
+    "ScreenClientMessage": {
+      "$ref": "#/$defs/ScreenClientMessage"
+    },
+    "ScreenConfigMsg": {
+      "$ref": "#/$defs/ScreenConfigMsg"
+    },
+    "ScreenFrame": {
+      "$ref": "#/$defs/ScreenFrame"
+    },
+    "ScreenHello": {
+      "$ref": "#/$defs/ScreenHello"
+    },
+    "ScreenServerMessage": {
+      "$ref": "#/$defs/ScreenServerMessage"
+    },
+    "ServerMessage": {
+      "$ref": "#/$defs/ServerMessage"
+    },
+    "Session": {
+      "$ref": "#/$defs/Session"
+    },
+    "SessionBrief": {
+      "$ref": "#/$defs/SessionBrief"
+    },
+    "SessionCreate": {
+      "$ref": "#/$defs/SessionCreate"
+    },
+    "SessionMsg": {
+      "$ref": "#/$defs/SessionMsg"
+    },
+    "SessionUpdate": {
+      "$ref": "#/$defs/SessionUpdate"
+    },
+    "StatusMsg": {
+      "$ref": "#/$defs/StatusMsg"
+    },
+    "Stroke": {
+      "$ref": "#/$defs/Stroke"
+    },
+    "StudentRow": {
+      "$ref": "#/$defs/StudentRow"
+    },
+    "SymbolSpan": {
+      "$ref": "#/$defs/SymbolSpan"
+    },
+    "Target": {
+      "$ref": "#/$defs/Target"
+    },
+    "TutorInfo": {
+      "$ref": "#/$defs/TutorInfo"
+    },
+    "VerdictCount": {
+      "$ref": "#/$defs/VerdictCount"
+    },
+    "VoiceAudio": {
+      "$ref": "#/$defs/VoiceAudio"
+    },
+    "VoiceAudioOut": {
+      "$ref": "#/$defs/VoiceAudioOut"
+    },
+    "VoiceDictate": {
+      "$ref": "#/$defs/VoiceDictate"
+    },
+    "VoiceStop": {
+      "$ref": "#/$defs/VoiceStop"
+    },
+    "VoiceTranscript": {
+      "$ref": "#/$defs/VoiceTranscript"
+    }
+  },
+  "$defs": {
+    "AXElement": {
+      "additionalProperties": false,
+      "description": "One accessibility element of the frontmost app (role/title/frame); its value is never sent for secure fields.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "frame": {
+          "$ref": "#/$defs/BBox"
+        },
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "path": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "role",
+        "frame"
+      ],
+      "title": "AXElement",
+      "type": "object"
+    },
+    "AXSnapshot": {
+      "additionalProperties": false,
+      "description": "The frontmost app's visible elements. Empty (and secure_field_focused) while a password field has focus.",
+      "properties": {
+        "type": {
+          "const": "ax.snapshot",
+          "default": "ax.snapshot",
+          "type": "string"
+        },
+        "app": {
+          "type": "string"
+        },
+        "bundle_id": {
+          "default": "",
+          "type": "string"
+        },
+        "window_title": {
+          "default": "",
+          "type": "string"
+        },
+        "display": {
+          "default": 0,
+          "type": "integer"
+        },
+        "elements": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AXElement"
+          },
+          "type": "array"
+        },
+        "focused_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "secure_field_focused": {
+          "default": false,
+          "type": "boolean"
+        },
+        "pointer": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Point2"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "t_ms": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "app",
+        "t_ms"
+      ],
+      "title": "AXSnapshot",
+      "type": "object"
+    },
+    "Anchor": {
+      "additionalProperties": false,
+      "properties": {
+        "line_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stroke_ids": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "bbox": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BBox"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "node_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Anchor",
+      "type": "object"
+    },
+    "BBox": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number"
+        },
+        "h": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "w",
+        "h"
+      ],
+      "title": "BBox",
+      "type": "object"
+    },
+    "CheckResult": {
+      "additionalProperties": false,
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "anchor": {
+          "$ref": "#/$defs/Anchor"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "expected": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "ok",
+        "kind",
+        "anchor",
+        "detail"
+      ],
+      "title": "CheckResult",
+      "type": "object"
+    },
+    "ClientMessage": {
+      "title": "ClientMessage",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/InkUpdate"
+        },
+        {
+          "$ref": "#/$defs/HintRequest"
+        },
+        {
+          "$ref": "#/$defs/QuestionAnswer"
+        },
+        {
+          "$ref": "#/$defs/GhostAction"
+        },
+        {
+          "$ref": "#/$defs/MarkDismiss"
+        },
+        {
+          "$ref": "#/$defs/SessionUpdate"
+        },
+        {
+          "$ref": "#/$defs/VoiceAudio"
+        },
+        {
+          "$ref": "#/$defs/VoiceStop"
+        },
+        {
+          "$ref": "#/$defs/LineCorrection"
+        },
+        {
+          "$ref": "#/$defs/VoiceDictate"
+        }
+      ]
+    },
+    "DisplayInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "frame": {
+          "$ref": "#/$defs/BBox"
+        },
+        "scale": {
+          "default": 1,
+          "type": "number"
+        },
+        "main": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "frame"
+      ],
+      "title": "DisplayInfo",
+      "type": "object"
+    },
+    "DoneWhen": {
+      "additionalProperties": false,
+      "description": "How the stepper knows a step is done: state predicates first; the user's \"next\" always works.",
+      "properties": {
+        "kind": {
+          "enum": [
+            "ax_exists",
+            "ax_value",
+            "window_title",
+            "vlm_yes_no",
+            "user_next"
+          ],
+          "type": "string"
+        },
+        "args": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "type": "object"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "DoneWhen",
+      "type": "object"
+    },
+    "ErrorMsg": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "error",
+          "default": "error",
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "message"
+      ],
+      "title": "ErrorMsg",
+      "type": "object"
+    },
+    "FeedbackEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "page_id": {
+          "type": "string"
+        },
+        "anchor": {
+          "$ref": "#/$defs/Anchor"
+        },
+        "type": {
+          "enum": [
+            "mark",
+            "ghost",
+            "hint",
+            "question",
+            "speak",
+            "explain",
+            "summary",
+            "retract"
+          ],
+          "type": "string"
+        },
+        "glyph": {
+          "anyOf": [
+            {
+              "enum": [
+                "check",
+                "cross",
+                "question",
+                "pin",
+                "underline",
+                "circle"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "enum": [
+                "ok",
+                "minor",
+                "major"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "hint_level": {
+          "anyOf": [
+            {
+              "maximum": 4,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "refers_to": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "source": {
+          "default": "tutor",
+          "enum": [
+            "checker",
+            "tutor",
+            "recognizer"
+          ],
+          "type": "string"
+        },
+        "choices": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "page_id",
+        "anchor",
+        "type"
+      ],
+      "title": "FeedbackEvent",
+      "type": "object"
+    },
+    "FeedbackMsg": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "feedback",
+          "default": "feedback",
+          "type": "string"
+        },
+        "feedback": {
+          "$ref": "#/$defs/FeedbackEvent"
+        },
+        "provider": {
+          "default": "",
+          "type": "string"
+        },
+        "model": {
+          "default": "",
+          "type": "string"
+        },
+        "ms": {
+          "default": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "feedback"
+      ],
+      "title": "FeedbackMsg",
+      "type": "object"
+    },
+    "GhostAction": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "ghost.accept",
+            "ghost.dismiss"
+          ],
+          "type": "string"
+        },
+        "page_id": {
+          "type": "string"
+        },
+        "feedback_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "page_id",
+        "feedback_id"
+      ],
+      "title": "GhostAction",
+      "type": "object"
+    },
+    "Graph": {
+      "additionalProperties": false,
+      "properties": {
+        "nodes": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/GraphNode"
+          },
+          "type": "array"
+        },
+        "edges": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/GraphEdge"
+          },
+          "type": "array"
+        }
+      },
+      "title": "Graph",
+      "type": "object"
+    },
+    "GraphEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "src": {
+          "type": "string"
+        },
+        "dst": {
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "directed": {
+          "default": true,
+          "type": "boolean"
+        },
+        "stroke_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "src",
+        "dst"
+      ],
+      "title": "GraphEdge",
+      "type": "object"
+    },
+    "GraphNode": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "bbox": {
+          "$ref": "#/$defs/BBox"
+        },
+        "stroke_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "shape": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "bbox",
+        "stroke_ids"
+      ],
+      "title": "GraphNode",
+      "type": "object"
+    },
+    "GuideControl": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "guide.control",
+          "default": "guide.control",
+          "type": "string"
+        },
+        "action": {
+          "enum": [
+            "next",
+            "back",
+            "repeat",
+            "pause",
+            "resume",
+            "stop"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "GuideControl",
+      "type": "object"
+    },
+    "GuideGoal": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "guide.goal",
+          "default": "guide.goal",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 500,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "GuideGoal",
+      "type": "object"
+    },
+    "GuidePlan": {
+      "additionalProperties": false,
+      "properties": {
+        "goal": {
+          "type": "string"
+        },
+        "app": {
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/GuideStep"
+          },
+          "type": "array"
+        },
+        "version": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "goal",
+        "app",
+        "steps"
+      ],
+      "title": "GuidePlan",
+      "type": "object"
+    },
+    "GuidePlanMsg": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "guide.plan",
+          "default": "guide.plan",
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/GuidePlan"
+        }
+      },
+      "required": [
+        "plan"
+      ],
+      "title": "GuidePlanMsg",
+      "type": "object"
+    },
+    "GuideStatusMsg": {
+      "additionalProperties": false,
+      "description": "What the tutor is doing, for the phantom icon and its transcript (\"Got it — planning…\", \"Step 2 of 5\").",
+      "properties": {
+        "type": {
+          "const": "guide.status",
+          "default": "guide.status",
+          "type": "string"
+        },
+        "phase": {
+          "enum": [
+            "idle",
+            "planning",
+            "locating",
+            "guiding",
+            "verifying",
+            "replanning",
+            "paused",
+            "done",
+            "error"
+          ],
+          "type": "string"
+        },
+        "step": {
+          "default": 0,
+          "type": "integer"
+        },
+        "of": {
+          "default": 0,
+          "type": "integer"
+        },
+        "detail": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "required": [
+        "phase"
+      ],
+      "title": "GuideStatusMsg",
+      "type": "object"
+    },
+    "GuideStep": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "n": {
+          "type": "integer"
+        },
+        "instruction": {
+          "type": "string"
+        },
+        "speak": {
+          "type": "string"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Target"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "done_when": {
+          "$ref": "#/$defs/DoneWhen"
+        },
+        "hint_levels": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "n",
+        "instruction",
+        "speak",
+        "done_when"
+      ],
+      "title": "GuideStep",
+      "type": "object"
+    },
+    "HintRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "hint.request",
+          "default": "hint.request",
+          "type": "string"
+        },
+        "page_id": {
+          "type": "string"
+        },
+        "feedback_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "line_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "level": {
+          "maximum": 4,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "explicit": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "page_id",
+        "level"
+      ],
+      "title": "HintRequest",
+      "type": "object"
+    },
+    "Homework": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "maxLength": 120,
+          "minLength": 1,
+          "type": "string"
+        },
+        "mode": {
+          "default": "math",
+          "enum": [
+            "math",
+            "diagram",
+            "system_design",
+            "consulting",
+            "language",
+            "accounting",
+            "sudoku",
+            "screen",
+            "other"
+          ],
+          "type": "string"
+        },
+        "problem": {
+          "default": "",
+          "maxLength": 2000,
+          "type": "string"
+        },
+        "due": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "answer": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "id": {
+          "type": "string"
+        },
+        "created": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "title",
+        "id",
+        "created"
+      ],
+      "title": "Homework",
+      "type": "object"
+    },
+    "HomeworkCreate": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "maxLength": 120,
+          "minLength": 1,
+          "type": "string"
+        },
+        "mode": {
+          "default": "math",
+          "enum": [
+            "math",
+            "diagram",
+            "system_design",
+            "consulting",
+            "language",
+            "accounting",
+            "sudoku",
+            "screen",
+            "other"
+          ],
+          "type": "string"
+        },
+        "problem": {
+          "default": "",
+          "maxLength": 2000,
+          "type": "string"
+        },
+        "due": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "answer": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "title": "HomeworkCreate",
+      "type": "object"
+    },
+    "HomeworkProgress": {
+      "additionalProperties": false,
+      "properties": {
+        "homework": {
+          "$ref": "#/$defs/Homework"
+        },
+        "link": {
+          "type": "string"
+        },
+        "qr": {
+          "type": "string"
+        },
+        "rows": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/StudentRow"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "homework",
+        "link",
+        "qr"
+      ],
+      "title": "HomeworkProgress",
+      "type": "object"
+    },
+    "HomeworkPublic": {
+      "additionalProperties": false,
+      "description": "What a student's device sees for a homework link: never who else did it.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "math",
+            "diagram",
+            "system_design",
+            "consulting",
+            "language",
+            "accounting",
+            "sudoku",
+            "screen",
+            "other"
+          ],
+          "type": "string"
+        },
+        "problem": {
+          "type": "string"
+        },
+        "due": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "mode",
+        "problem"
+      ],
+      "title": "HomeworkPublic",
+      "type": "object"
+    },
+    "InkUpdate": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "ink.update",
+          "default": "ink.update",
+          "type": "string"
+        },
+        "page_id": {
+          "type": "string"
+        },
+        "strokes_changed": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Stroke"
+          },
+          "type": "array"
+        },
+        "strokes_removed": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PageRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "page_id"
+      ],
+      "title": "InkUpdate",
+      "type": "object"
+    },
+    "InputEvent": {
+      "additionalProperties": false,
+      "description": "That the user clicked or typed, and where they clicked. Keys carry no content, not even key codes.",
+      "properties": {
+        "type": {
+          "const": "input.event",
+          "default": "input.event",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "click",
+            "key"
+          ],
+          "type": "string"
+        },
+        "t_ms": {
+          "type": "number"
+        },
+        "at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Point2"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "kind",
+        "t_ms"
+      ],
+      "title": "InputEvent",
+      "type": "object"
+    },
+    "LearningLog": {
+      "additionalProperties": false,
+      "description": "Derived, deterministically, from what the store already holds (progress.py).",
+      "properties": {
+        "session_id": {
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "math",
+            "diagram",
+            "system_design",
+            "consulting",
+            "language",
+            "accounting",
+            "sudoku",
+            "screen",
+            "other"
+          ],
+          "type": "string"
+        },
+        "problem": {
+          "default": "",
+          "type": "string"
+        },
+        "student": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "homework_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "created": {
+          "default": 0,
+          "type": "number"
+        },
+        "last_activity": {
+          "default": 0,
+          "type": "number"
+        },
+        "lines_written": {
+          "default": 0,
+          "type": "integer"
+        },
+        "lines_checked": {
+          "default": 0,
+          "type": "integer"
+        },
+        "verdicts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/VerdictCount"
+          },
+          "type": "array"
+        },
+        "mistakes": {
+          "default": 0,
+          "type": "integer"
+        },
+        "mistakes_fixed": {
+          "default": 0,
+          "type": "integer"
+        },
+        "ghosts_retired": {
+          "default": 0,
+          "type": "integer"
+        },
+        "hints": {
+          "default": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "questions_asked": {
+          "default": 0,
+          "type": "integer"
+        },
+        "questions_answered": {
+          "default": 0,
+          "type": "integer"
+        },
+        "corrections": {
+          "default": 0,
+          "type": "integer"
+        },
+        "tutor_marks": {
+          "default": 0,
+          "type": "integer"
+        },
+        "strokes": {
+          "default": 0,
+          "type": "integer"
+        },
+        "time_on_task_s": {
+          "default": 0,
+          "type": "number"
+        },
+        "finished": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "finished_by": {
+          "default": "",
+          "enum": [
+            "answer",
+            "last_line",
+            ""
+          ],
+          "type": "string"
+        },
+        "lines": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/LogLine"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "session_id",
+        "mode"
+      ],
+      "title": "LearningLog",
+      "type": "object"
+    },
+    "LineCorrection": {
+      "additionalProperties": false,
+      "description": "\"Tell the tutor what you meant\": what a line really says, typed (or dictated) by the student from a question\nchip or a \"?\" mark. Only the reading changes; the ink is never touched.",
+      "properties": {
+        "type": {
+          "const": "line.correction",
+          "default": "line.correction",
+          "type": "string"
+        },
+        "page_id": {
+          "type": "string"
+        },
+        "line_id": {
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 500,
+          "minLength": 1,
+          "type": "string"
+        },
+        "source": {
+          "default": "typed",
+          "enum": [
+            "typed",
+            "spoken"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "page_id",
+        "line_id",
+        "text"
+      ],
+      "title": "LineCorrection",
+      "type": "object"
+    },
+    "LogLine": {
+      "additionalProperties": false,
+      "description": "One checked line in the learning log (the reading is short text; no strokes, no images).",
+      "properties": {
+        "line_id": {
+          "type": "string"
+        },
+        "page_id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "reads": {
+          "default": "",
+          "type": "string"
+        },
+        "ok": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "was_wrong": {
+          "default": false,
+          "type": "boolean"
+        },
+        "fixed": {
+          "default": false,
+          "type": "boolean"
+        },
+        "label": {
+          "default": "",
+          "type": "string"
+        },
+        "detail": {
+          "default": "",
+          "type": "string"
+        },
+        "hint_level": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line_id",
+        "page_id",
+        "kind"
+      ],
+      "title": "LogLine",
+      "type": "object"
+    },
+    "MarkDismiss": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "mark.dismiss",
+          "default": "mark.dismiss",
+          "type": "string"
+        },
+        "page_id": {
+          "type": "string"
+        },
+        "feedback_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "page_id",
+        "feedback_id"
+      ],
+      "title": "MarkDismiss",
+      "type": "object"
+    },
+    "OverlayEvent": {
+      "additionalProperties": false,
+      "description": "One thing the helper draws over the screen (or clears). It points; nothing here can act on the screen.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "highlight",
+            "arrow",
+            "caption",
+            "pulse",
+            "clear",
+            "phantom_state"
+          ],
+          "type": "string"
+        },
+        "bbox": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BBox"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "from_point": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Point2"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "step_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "ttl_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "refers_to": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "state": {
+          "anyOf": [
+            {
+              "enum": [
+                "idle",
+                "listening",
+                "thinking",
+                "speaking",
+                "paused",
+                "capture_paused"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "OverlayEvent",
+      "type": "object"
+    },
+    "OverlayMsg": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "overlay",
+          "default": "overlay",
+          "type": "string"
+        },
+        "event": {
+          "$ref": "#/$defs/OverlayEvent"
+        },
+        "provider": {
+          "default": "",
+          "type": "string"
+        },
+        "model": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event"
+      ],
+      "title": "OverlayMsg",
+      "type": "object"
+    },
+    "PageRef": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "index": {
+          "type": "integer"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "index",
+        "width",
+        "height"
+      ],
+      "title": "PageRef",
+      "type": "object"
+    },
+    "Point2": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Point2",
+      "type": "object"
+    },
+    "ProgressSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "session_id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "log_hash": {
+          "type": "string"
+        },
+        "created": {
+          "type": "number"
+        },
+        "stale": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "session_id",
+        "text",
+        "source",
+        "log_hash",
+        "created"
+      ],
+      "title": "ProgressSummary",
+      "type": "object"
+    },
+    "QuestionAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "question.answer",
+          "default": "question.answer",
+          "type": "string"
+        },
+        "page_id": {
+          "type": "string"
+        },
+        "feedback_id": {
+          "type": "string"
+        },
+        "reading_line_id": {
+          "type": "string"
+        },
+        "chosen": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "page_id",
+        "feedback_id",
+        "reading_line_id",
+        "chosen"
+      ],
+      "title": "QuestionAnswer",
+      "type": "object"
+    },
+    "Reading": {
+      "additionalProperties": false,
+      "properties": {
+        "page_id": {
+          "type": "string"
+        },
+        "lines": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ReadingLine"
+          },
+          "type": "array"
+        },
+        "graph": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Graph"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "version": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "page_id"
+      ],
+      "title": "Reading",
+      "type": "object"
+    },
+    "ReadingLine": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "stroke_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "bbox": {
+          "$ref": "#/$defs/BBox"
+        },
+        "kind": {
+          "enum": [
+            "math",
+            "text",
+            "label",
+            "long_division"
+          ],
+          "type": "string"
+        },
+        "latex": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "alternatives": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "symbol_map": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SymbolSpan"
+          },
+          "type": "array"
+        },
+        "structure": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "corrected": {
+          "anyOf": [
+            {
+              "enum": [
+                "typed",
+                "spoken"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "stroke_ids",
+        "bbox",
+        "kind",
+        "confidence"
+      ],
+      "title": "ReadingLine",
+      "type": "object"
+    },
+    "ReadingMsg": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "reading",
+          "default": "reading",
+          "type": "string"
+        },
+        "reading": {
+          "$ref": "#/$defs/Reading"
+        },
+        "ms": {
+          "default": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "reading"
+      ],
+      "title": "ReadingMsg",
+      "type": "object"
+    },
+    "RuntimeMsg": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "runtime",
+          "default": "runtime",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/RuntimeStatus"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "RuntimeMsg",
+      "type": "object"
+    },
+    "RuntimeStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "available_gb": {
+          "type": "number"
+        },
+        "level": {
+          "enum": [
+            "ok",
+            "low",
+            "critical"
+          ],
+          "type": "string"
+        },
+        "tier2_model": {
+          "type": "string"
+        },
+        "tier2_mode": {
+          "enum": [
+            "full",
+            "offload",
+            "refused",
+            "external",
+            "loading",
+            "unavailable",
+            "off"
+          ],
+          "type": "string"
+        },
+        "detail": {
+          "default": "",
+          "type": "string"
+        },
+        "event": {
+          "default": "",
+          "type": "string"
+        },
+        "event_id": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "available_gb",
+        "level",
+        "tier2_model",
+        "tier2_mode"
+      ],
+      "title": "RuntimeStatus",
+      "type": "object"
+    },
+    "ScreenClientMessage": {
+      "title": "ScreenClientMessage",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ScreenHello"
+        },
+        {
+          "$ref": "#/$defs/ScreenFrame"
+        },
+        {
+          "$ref": "#/$defs/AXSnapshot"
+        },
+        {
+          "$ref": "#/$defs/InputEvent"
+        },
+        {
+          "$ref": "#/$defs/GuideGoal"
+        },
+        {
+          "$ref": "#/$defs/GuideControl"
+        },
+        {
+          "$ref": "#/$defs/SessionUpdate"
+        },
+        {
+          "$ref": "#/$defs/VoiceAudio"
+        },
+        {
+          "$ref": "#/$defs/VoiceStop"
+        }
+      ]
+    },
+    "ScreenConfigMsg": {
+      "additionalProperties": false,
+      "description": "Sent on connect. The helper skips blocklisted apps' windows before capture (Phase 12).",
+      "properties": {
+        "type": {
+          "const": "screen.config",
+          "default": "screen.config",
+          "type": "string"
+        },
+        "blocklist": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "capture_fps": {
+          "default": 1.0,
+          "type": "number"
+        },
+        "allow_automation": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "blocklist"
+      ],
+      "title": "ScreenConfigMsg",
+      "type": "object"
+    },
+    "ScreenFrame": {
+      "additionalProperties": false,
+      "description": "A downscaled screenshot of one display. Never leaves the Mac (screen mode is local-only).",
+      "properties": {
+        "type": {
+          "const": "screen.frame",
+          "default": "screen.frame",
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "display": {
+          "type": "integer"
+        },
+        "origin": {
+          "$ref": "#/$defs/Point2"
+        },
+        "width": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "scale": {
+          "type": "number"
+        },
+        "jpeg_b64": {
+          "type": "string"
+        },
+        "window": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BBox"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "t_ms": {
+          "type": "number"
+        },
+        "trigger": {
+          "enum": [
+            "tick",
+            "click",
+            "focus"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "display",
+        "origin",
+        "width",
+        "height",
+        "scale",
+        "jpeg_b64",
+        "t_ms",
+        "trigger"
+      ],
+      "title": "ScreenFrame",
+      "type": "object"
+    },
+    "ScreenHello": {
+      "additionalProperties": false,
+      "description": "Sent on connect and whenever the display layout changes, so the server can keep boxes on screen.",
+      "properties": {
+        "type": {
+          "const": "screen.hello",
+          "default": "screen.hello",
+          "type": "string"
+        },
+        "helper": {
+          "default": "",
+          "type": "string"
+        },
+        "displays": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DisplayInfo"
+          },
+          "type": "array"
+        }
+      },
+      "title": "ScreenHello",
+      "type": "object"
+    },
+    "ScreenServerMessage": {
+      "title": "ScreenServerMessage",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/OverlayMsg"
+        },
+        {
+          "$ref": "#/$defs/ScreenConfigMsg"
+        },
+        {
+          "$ref": "#/$defs/GuidePlanMsg"
+        },
+        {
+          "$ref": "#/$defs/GuideStatusMsg"
+        },
+        {
+          "$ref": "#/$defs/VoiceTranscript"
+        },
+        {
+          "$ref": "#/$defs/VoiceAudioOut"
+        },
+        {
+          "$ref": "#/$defs/RuntimeMsg"
+        },
+        {
+          "$ref": "#/$defs/ErrorMsg"
+        }
+      ]
+    },
+    "ServerMessage": {
+      "title": "ServerMessage",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SessionMsg"
+        },
+        {
+          "$ref": "#/$defs/ReadingMsg"
+        },
+        {
+          "$ref": "#/$defs/FeedbackMsg"
+        },
+        {
+          "$ref": "#/$defs/StatusMsg"
+        },
+        {
+          "$ref": "#/$defs/VoiceTranscript"
+        },
+        {
+          "$ref": "#/$defs/VoiceAudioOut"
+        },
+        {
+          "$ref": "#/$defs/ErrorMsg"
+        },
+        {
+          "$ref": "#/$defs/RuntimeMsg"
+        }
+      ]
+    },
+    "Session": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "math",
+            "diagram",
+            "system_design",
+            "consulting",
+            "language",
+            "accounting",
+            "sudoku",
+            "screen",
+            "other"
+          ],
+          "type": "string"
+        },
+        "problem": {
+          "default": "",
+          "type": "string"
+        },
+        "rubric": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reference_answer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "provider": {
+          "default": "local",
+          "enum": [
+            "local",
+            "anthropic",
+            "openai"
+          ],
+          "type": "string"
+        },
+        "voice": {
+          "default": false,
+          "type": "boolean"
+        },
+        "pages": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PageRef"
+          },
+          "type": "array"
+        },
+        "keep_history": {
+          "default": false,
+          "type": "boolean"
+        },
+        "student": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "homework_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "mode"
+      ],
+      "title": "Session",
+      "type": "object"
+    },
+    "SessionBrief": {
+      "additionalProperties": false,
+      "properties": {
+        "session_id": {
+          "type": "string"
+        },
+        "mode": {
+          "enum": [
+            "math",
+            "diagram",
+            "system_design",
+            "consulting",
+            "language",
+            "accounting",
+            "sudoku",
+            "screen",
+            "other"
+          ],
+          "type": "string"
+        },
+        "problem": {
+          "default": "",
+          "type": "string"
+        },
+        "student": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "created": {
+          "default": 0,
+          "type": "number"
+        },
+        "log": {
+          "$ref": "#/$defs/LearningLog"
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProgressSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "session_id",
+        "mode",
+        "log"
+      ],
+      "title": "SessionBrief",
+      "type": "object"
+    },
+    "SessionCreate": {
+      "description": "POST /api/sessions. `student` / `homework_id` come from a homework link (`/?hw=<id>`).",
+      "properties": {
+        "mode": {
+          "default": "math",
+          "enum": [
+            "math",
+            "diagram",
+            "system_design",
+            "consulting",
+            "language",
+            "accounting",
+            "sudoku",
+            "screen",
+            "other"
+          ],
+          "type": "string"
+        },
+        "problem": {
+          "default": "",
+          "type": "string"
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "enum": [
+                "local",
+                "anthropic",
+                "openai"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "student": {
+          "anyOf": [
+            {
+              "maxLength": 40,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "homework_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "SessionCreate",
+      "type": "object"
+    },
+    "SessionMsg": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "session",
+          "default": "session",
+          "type": "string"
+        },
+        "session": {
+          "$ref": "#/$defs/Session"
+        },
+        "tier2": {
+          "$ref": "#/$defs/TutorInfo"
+        }
+      },
+      "required": [
+        "session",
+        "tier2"
+      ],
+      "title": "SessionMsg",
+      "type": "object"
+    },
+    "SessionUpdate": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "session.update",
+          "default": "session.update",
+          "type": "string"
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "enum": [
+                "local",
+                "anthropic",
+                "openai"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "voice": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "problem": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "math",
+                "diagram",
+                "system_design",
+                "consulting",
+                "language",
+                "accounting",
+                "sudoku",
+                "screen",
+                "other"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "keep_history": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "SessionUpdate",
+      "type": "object"
+    },
+    "StatusMsg": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "status",
+          "default": "status",
+          "type": "string"
+        },
+        "page_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "phase": {
+          "enum": [
+            "received",
+            "recognizing",
+            "checking",
+            "reviewing",
+            "waiting",
+            "idle",
+            "cancelled",
+            "error"
+          ],
+          "type": "string"
+        },
+        "detail": {
+          "default": "",
+          "type": "string"
+        },
+        "line_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "phase"
+      ],
+      "title": "StatusMsg",
+      "type": "object"
+    },
+    "Stroke": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "page_id": {
+          "type": "string"
+        },
+        "color": {
+          "default": "#1F2328",
+          "type": "string"
+        },
+        "width": {
+          "default": 3,
+          "type": "number"
+        },
+        "pointer_type": {
+          "default": "pen",
+          "enum": [
+            "pen",
+            "mouse",
+            "touch"
+          ],
+          "type": "string"
+        },
+        "pts": {
+          "items": {
+            "maxItems": 6,
+            "minItems": 6,
+            "type": "array",
+            "items": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "page_id",
+        "pts"
+      ],
+      "title": "Stroke",
+      "type": "object"
+    },
+    "StudentRow": {
+      "additionalProperties": false,
+      "properties": {
+        "student": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "done",
+            "in_progress",
+            "not_started"
+          ],
+          "type": "string"
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "sessions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "time_on_task_s": {
+          "default": 0,
+          "type": "number"
+        },
+        "hints": {
+          "default": 0,
+          "type": "integer"
+        },
+        "hints_explicit": {
+          "default": 0,
+          "type": "integer"
+        },
+        "mistakes": {
+          "default": 0,
+          "type": "integer"
+        },
+        "mistakes_fixed": {
+          "default": 0,
+          "type": "integer"
+        },
+        "last_activity": {
+          "default": 0,
+          "type": "number"
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProgressSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "student",
+        "status",
+        "session_id"
+      ],
+      "title": "StudentRow",
+      "type": "object"
+    },
+    "SymbolSpan": {
+      "additionalProperties": false,
+      "properties": {
+        "symbol": {
+          "type": "string"
+        },
+        "index": {
+          "type": "integer"
+        },
+        "stroke_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "symbol",
+        "index",
+        "stroke_ids"
+      ],
+      "title": "SymbolSpan",
+      "type": "object"
+    },
+    "Target": {
+      "additionalProperties": false,
+      "properties": {
+        "ax_path": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "title_regex": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "bbox": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BBox"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "source": {
+          "anyOf": [
+            {
+              "enum": [
+                "ax",
+                "vlm"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Target",
+      "type": "object"
+    },
+    "TutorInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "enum": [
+            "local",
+            "anthropic",
+            "openai"
+          ],
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "ready": {
+          "type": "boolean"
+        },
+        "detail": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "model",
+        "ready"
+      ],
+      "title": "TutorInfo",
+      "type": "object"
+    },
+    "VerdictCount": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "ok": {
+          "default": 0,
+          "type": "integer"
+        },
+        "wrong": {
+          "default": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "VerdictCount",
+      "type": "object"
+    },
+    "VoiceAudio": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "voice.audio",
+          "default": "voice.audio",
+          "type": "string"
+        },
+        "pcm16_b64": {
+          "type": "string"
+        },
+        "sample_rate": {
+          "default": 16000,
+          "type": "integer"
+        },
+        "pen": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "pcm16_b64"
+      ],
+      "title": "VoiceAudio",
+      "type": "object"
+    },
+    "VoiceAudioOut": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "voice.audio",
+          "default": "voice.audio",
+          "type": "string"
+        },
+        "pcm16_b64": {
+          "type": "string"
+        },
+        "sample_rate": {
+          "type": "integer"
+        },
+        "feedback_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "pcm16_b64",
+        "sample_rate"
+      ],
+      "title": "VoiceAudioOut",
+      "type": "object"
+    },
+    "VoiceDictate": {
+      "additionalProperties": false,
+      "description": "The next utterance fills the correction field for this line (it is not a question for the tutor).",
+      "properties": {
+        "type": {
+          "const": "voice.dictate",
+          "default": "voice.dictate",
+          "type": "string"
+        },
+        "page_id": {
+          "type": "string"
+        },
+        "line_id": {
+          "type": "string"
+        },
+        "cancel": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "page_id",
+        "line_id"
+      ],
+      "title": "VoiceDictate",
+      "type": "object"
+    },
+    "VoiceStop": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "voice.stop",
+          "default": "voice.stop",
+          "type": "string"
+        }
+      },
+      "title": "VoiceStop",
+      "type": "object"
+    },
+    "VoiceTranscript": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "voice.transcript",
+          "default": "voice.transcript",
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "final": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "text",
+        "final"
+      ],
+      "title": "VoiceTranscript",
+      "type": "object"
+    }
+  }
+}

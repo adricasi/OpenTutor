@@ -1,0 +1,83 @@
+/* Teacher view and the homework start screen. Uses the app's variables from styles.css. */
+.teacher .err, .homework-start .err { color: var(--major); }
+a.button {
+  display: inline-flex; align-items: center; border: 1px solid var(--line); background: #fff; color: var(--ink);
+  border-radius: 9px; padding: 7px 11px; min-height: 36px; text-decoration: none; white-space: nowrap;
+}
+.teacher .row, .homework-start .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+
+/* homework start screen (/?hw=…) */
+.homework-start .kicker { color: var(--tutor); font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: .04em; }
+.homework-start h1 { font-size: 40px; }
+.homework-problem { margin: 0; padding: 10px 12px; border-left: 3px solid var(--tutor); background: var(--bar); border-radius: 0 10px 10px 0; white-space: pre-wrap; }
+.start .homework-start input { border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-weight: 400; font-size: 18px; -webkit-user-select: text; user-select: text; }
+.homework-start .name-note { margin: -8px 0 0; }
+
+/* teacher page */
+.teacher { min-height: 100%; background: var(--paper); -webkit-user-select: text; user-select: text; }
+#root:has(.teacher) { height: auto; min-height: 100%; }
+.teacher-bar { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; padding: 12px 20px; background: var(--bar); border-bottom: 1px solid var(--line); }
+.teacher-bar h1 { margin: 0; font-family: Caveat, cursive; font-weight: 400; font-size: 34px; }
+.teacher-error { padding: 0 20px; }
+.teacher-main { display: grid; grid-template-columns: 320px 1fr; gap: 20px; padding: 20px; align-items: start; }
+.teacher-list { display: grid; gap: 12px; }
+.teacher-list h3 { margin: 8px 0 0; font-size: 15px; }
+.teacher-list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.teacher-list li button { width: 100%; display: flex; justify-content: space-between; gap: 8px; text-align: left; white-space: normal; }
+.teacher-list .count { opacity: .7; font-variant-numeric: tabular-nums; }
+.new-homework { display: grid; gap: 10px; padding: 16px; }
+.new-homework h3 { margin: 0; }
+.new-homework label { display: grid; gap: 4px; font-weight: 600; font-size: 14px; flex: 1; }
+.new-homework input, .new-homework select, .new-homework textarea { border: 1px solid var(--line); border-radius: 9px; padding: 8px; font-weight: 400; }
+.new-homework button[type=submit] { background: var(--ink); color: #fff; font-weight: 600; }
+.teacher-content { min-width: 0; display: grid; gap: 16px; }
+.teacher-hw-head { display: flex; justify-content: space-between; gap: 12px; align-items: start; flex-wrap: wrap; }
+.teacher-hw-head h2, .teacher-session-head h2 { margin: 0; font-size: 22px; }
+.teacher-hw-head p { margin: 4px 0 0; }
+.homework-link { display: flex; gap: 16px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.homework-link img { flex: none; border-radius: 8px; image-rendering: pixelated; }
+.homework-link h3 { margin: 0 0 6px; font-size: 16px; }
+.homework-link p { margin: 6px 0; }
+.link-url { word-break: break-all; font-size: 14px; }
+.link-url a { color: var(--accent); }
+
+.teacher-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 15px; }
+.teacher-table th { text-align: left; font-size: 13px; color: var(--muted); font-weight: 600; background: var(--bar); }
+.teacher-table th, .teacher-table td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.teacher-table tbody tr { cursor: pointer; }
+.teacher-table tbody tr:hover, .teacher-table tbody tr:focus { background: #f6f8fa; outline: none; }
+.teacher-table td.name { font-weight: 600; white-space: nowrap; }
+.teacher-table td.summary { max-width: 520px; line-height: 1.4; }
+.status { white-space: nowrap; font-weight: 600; font-size: 14px; }
+.status.done { color: var(--ok); }
+.status.in_progress { color: #b26b00; }
+.status.not_started { color: var(--muted); font-weight: 400; }
+
+/* a session, read-only */
+.teacher-session { padding: 20px; display: grid; gap: 14px; }
+.teacher-session-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.teacher-session-body { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+.teacher-replay { min-width: 0; display: grid; gap: 10px; }
+.replay-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.replay-controls input[type=range] { flex: 1; min-width: 160px; }
+.replay-controls .check { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; }
+.teacher-paper { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; max-width: 100%; }
+.teacher-replay { overflow-x: auto; }
+.teacher-paper canvas { position: absolute; inset: 0; display: block; }
+.teacher-paper .tutor-layer .mark, .teacher-paper .tutor-layer .ghost { pointer-events: none; cursor: default; }
+.teacher-facts { display: grid; gap: 12px; }
+.teacher-facts section { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.teacher-facts h3 { margin: 0 0 8px; font-size: 15px; }
+.teacher-facts p { margin: 0 0 8px; line-height: 1.45; }
+.facts { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 0; font-size: 14px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.verdicts, .hints { margin: 8px 0 0; padding-left: 18px; font-size: 14px; }
+.verdicts { list-style: none; padding: 0; }
+
+@media (max-width: 900px) {
+  .teacher-main, .teacher-session-body { grid-template-columns: 1fr; }
+  .homework-link { flex-direction: column; align-items: flex-start; }
+  .teacher-table td.summary { min-width: 220px; }
+  .teacher-content { overflow-x: auto; }
+}
