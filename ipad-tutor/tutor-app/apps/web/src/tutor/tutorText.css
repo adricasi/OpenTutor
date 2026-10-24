@@ -1,0 +1,10 @@
+/* Typeset maths in the tutor's text (TutorText). KaTeX inherits the colour of the line it sits in (tutor purple in
+   chips, popovers and the voice bubble); sizes stay close to the surrounding text. */
+.tutor-math .katex { font-size: 1.08em; line-height: 1.2; }
+.tutor-math.display { display: block; max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+.tutor-math.display .katex-display { margin: .35em 0; }
+/* the popover's ghost text is Caveat 26px: keep its maths at a comparable size */
+.popover .ghost-text .tutor-math .katex { font-size: .8em; }
+.chip .tutor-math .katex { font-size: 1em; }
+/* the reference structure is pre-wrap: maths inside it is laid out by KaTeX, not by the whitespace */
+.panel .reference .tutor-math { white-space: normal; }
