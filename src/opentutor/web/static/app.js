@@ -332,8 +332,18 @@
     const box = document.getElementById("pad");
     const canvas = document.getElementById("pad-canvas");
     const ctx = canvas.getContext("2d");
+    const marksBox = document.getElementById("pad-marks");
+    const readingList = document.getElementById("pad-reading");
+    const padStatus = document.getElementById("pad-status");
+    const ROW = 52; // CSS px between the ruled lines (matches the pad background)
+    const PAUSE_MS = 1800;
+    const MARK_GLYPH = { correct: "✓", wrong: "✗", unknown: "?" };
+    const MARK_WORDS = { correct: "correct", wrong: "check this step", unknown: "can’t tell yet" };
     let strokes = [];
     let current = null;
+    let version = 0;
+    let timer = null;
+    let pending = null;
 
     function size() {
       const ratio = window.devicePixelRatio || 1;
@@ -360,6 +370,99 @@
       });
     }
 
+    // Live marking (AC-019.6): after a pause the hub reads the pad and marks each line,
+    // the way ipad-tutor marks a page. Strokes are grouped by the ruled line they sit on.
+    function rows() {
+      const height = canvas.getBoundingClientRect().height;
+      const byRow = new Map();
+      strokes.forEach((stroke) => {
+        const meanY = stroke.reduce((sum, pt) => sum + pt[1], 0) / stroke.length;
+        const row = Math.floor((meanY * height) / ROW);
+        const maxX = Math.max(...stroke.map((pt) => pt[0]));
+        byRow.set(row, Math.max(byRow.get(row) || 0, maxX));
+      });
+      return [...byRow.entries()].sort((a, b) => a[0] - b[0]).map(([row, maxX]) => ({ row: row, maxX: maxX }));
+    }
+
+    function clearMarks(message) {
+      marksBox.replaceChildren();
+      readingList.replaceChildren();
+      padStatus.textContent = message || "";
+    }
+
+    function schedule() {
+      window.clearTimeout(timer);
+      if (strokes.length) timer = window.setTimeout(liveCheck, PAUSE_MS);
+    }
+
+    function showMarks(event) {
+      if (!event.readable) { padStatus.textContent = "I can’t read that yet. Try writing a little bigger."; return; }
+      const width = canvas.getBoundingClientRect().width;
+      const lineRows = rows();
+      event.lines.forEach((line, i) => {
+        const place = lineRows[i];
+        if (place) {
+          const mark = document.createElement("span");
+          mark.className = "ot-mark " + line.mark;
+          mark.textContent = MARK_GLYPH[line.mark];
+          mark.style.left = Math.min(place.maxX * width + 10, width - 34) + "px";
+          mark.style.top = place.row * ROW + ROW / 2 + "px";
+          marksBox.appendChild(mark);
+        }
+        const item = document.createElement("li");
+        item.className = line.mark;
+        item.textContent = line.text + " — " + MARK_WORDS[line.mark];
+        readingList.appendChild(item);
+      });
+      const marks = event.lines.map((l) => l.mark);
+      padStatus.textContent = marks.includes("wrong")
+        ? "Look again at the line marked ✗. Tap Another hint if you’re stuck."
+        : event.verdict === "correct" ? "All correct. Well done!"
+        : event.verdict === "partly_correct" ? "Good so far. Keep going."
+        : "Keep going. I’ll mark each line when you pause.";
+      announce(padStatus.textContent);
+    }
+
+    async function liveCheck() {
+      if (box.hidden || !strokes.length) return;
+      if (!hasExercise()) { clearMarks("Send the exercise first, then write your working here and I’ll mark each line."); return; }
+      if (busyNow || pending) { schedule(); return; }
+      const asked = version;
+      padStatus.textContent = "Reading your writing…";
+      pending = (async () => {
+        try {
+          const out = document.createElement("canvas");
+          out.width = canvas.width;
+          out.height = canvas.height;
+          redraw(out.getContext("2d"));
+          const blob = await new Promise((resolve) => out.toBlob(resolve, "image/png"));
+          const data = new FormData();
+          data.append("intent", "mark");
+          data.append("handwriting", "1");
+          data.append("image", blob, "pad.png");
+          const res = await fetch("/api/messages", { method: "POST", body: data });
+          if (!res.ok) {
+            if (asked !== version) return;
+            if (res.status === 409) { padStatus.textContent = ""; schedule(); } // busy: try again after the next pause
+            else padStatus.textContent = "Couldn’t check right now. Keep writing.";
+            return;
+          }
+          const lines = (await res.text()).split("\n").filter(Boolean).map((l) => JSON.parse(l));
+          if (asked !== version) return; // the student kept writing: these marks are stale
+          clearMarks();
+          lines.forEach((ev) => {
+            if (ev.type === "marks") showMarks(ev);
+            else if (ev.type === "error" || ev.type === "notice") padStatus.textContent = ev.message;
+          });
+        } catch (e) {
+          if (asked === version) padStatus.textContent = "Couldn’t check right now. Keep writing.";
+        } finally {
+          pending = null;
+        }
+      })();
+      return pending;
+    }
+
     function point(e) {
       const rect = canvas.getBoundingClientRect();
       return [(e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height];
@@ -368,6 +471,9 @@
     canvas.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       canvas.setPointerCapture(e.pointerId);
+      window.clearTimeout(timer);
+      version++;
+      clearMarks();
       current = [point(e)];
       strokes.push(current);
       redraw();
@@ -377,21 +483,25 @@
       (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach((ev) => current.push(point(ev)));
       redraw();
     });
-    const end = () => { current = null; };
+    const end = () => { if (current) schedule(); current = null; };
     canvas.addEventListener("pointerup", end);
     canvas.addEventListener("pointercancel", end);
 
     function open() {
       box.hidden = false;
       size();
+      clearMarks(hasExercise() ? "" : "Send the exercise first, then write your working here and I’ll mark each line.");
       box.scrollIntoView({ block: "nearest" });
-      announce("Writing pad open. Write with your finger or a pen, then tap Use.");
+      announce("Writing pad open. Write one step per line; I mark each line when you pause. Tap Send to chat to ask about it.");
     }
 
     function close() {
       box.hidden = true;
       strokes = [];
       current = null;
+      version++;
+      window.clearTimeout(timer);
+      clearMarks();
     }
 
     function use() {
@@ -409,12 +519,12 @@
       }, "image/png");
     }
 
-    document.getElementById("pad-undo").addEventListener("click", () => { strokes.pop(); redraw(); });
-    document.getElementById("pad-clear").addEventListener("click", () => { strokes = []; redraw(); });
+    document.getElementById("pad-undo").addEventListener("click", () => { strokes.pop(); version++; clearMarks(); redraw(); schedule(); });
+    document.getElementById("pad-clear").addEventListener("click", () => { strokes = []; version++; clearMarks(); redraw(); window.clearTimeout(timer); });
     document.getElementById("pad-cancel").addEventListener("click", close);
     document.getElementById("pad-use").addEventListener("click", use);
-    window.addEventListener("resize", () => { if (!box.hidden) size(); });
-    return { open: open };
+    window.addEventListener("resize", () => { if (!box.hidden) { size(); version++; clearMarks(); schedule(); } });
+    return { open: open, whenIdle: () => pending || Promise.resolve() };
   })();
 
   // Speak instead of typing (REQ-020): the browser's speech recognition where this page may
@@ -497,6 +607,7 @@
   async function send(intent, message, file, options) {
     if (busyNow) return;
     busy(true);
+    await pad.whenIdle(); // a live pad check may be in flight: one request at a time
     const practice = options && options.practice;
     lastRequest = { intent: intent, message: message, file: file, options: options };
     const data = new FormData();

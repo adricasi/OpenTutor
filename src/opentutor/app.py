@@ -38,7 +38,7 @@ log = logging.getLogger("opentutor")
 COOKIE = "ot_session"
 TEACHER_COOKIE = "ot_teacher"
 LOOPBACK = {"127.0.0.1", "::1"}
-INTENTS: set[str] = {"ask", "new_exercise", "hint", "answer", "check", "practice"}
+INTENTS: set[str] = {"ask", "new_exercise", "hint", "answer", "check", "practice", "mark"}
 SECURITY_HEADERS = {
     "content-security-policy": (
         "default-src 'self'; img-src 'self' blob: data:; script-src 'self'; style-src 'self'; "

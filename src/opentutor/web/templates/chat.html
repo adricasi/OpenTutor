@@ -47,14 +47,19 @@
     </div>
     <div class="ot-photo-preview" id="photo-preview" hidden><img id="photo-thumb" alt="Photo ready to send"><span id="photo-name"></span><button class="btn btn-ghost btn-icon" type="button" id="photo-remove" aria-label="Remove photo">{{ icon("x", 18) }}</button></div>
     <div class="ot-pad" id="pad" hidden>
-      <p class="ot-pad-title"><strong>Write by hand</strong><span>Use your finger, a stylus or Apple Pencil.</span></p>
-      <canvas id="pad-canvas" role="img" aria-label="Writing pad"></canvas>
+      <p class="ot-pad-title"><strong>Write by hand</strong><span>One step per line, with your finger, a stylus or Apple Pencil. I mark each line when you pause.</span></p>
+      <div class="ot-pad-surface">
+        <canvas id="pad-canvas" role="img" aria-label="Writing pad"></canvas>
+        <div class="ot-pad-marks" id="pad-marks" aria-hidden="true"></div>
+      </div>
+      <p class="ot-pad-status" id="pad-status" role="status"></p>
+      <ol class="ot-pad-reading" id="pad-reading" aria-label="What the tutor read"></ol>
       <div class="ot-pad-tools">
         <button class="btn btn-ghost" type="button" id="pad-undo">{{ icon("undo-2", 17) }}Undo</button>
         <button class="btn btn-ghost" type="button" id="pad-clear">{{ icon("eraser", 17) }}Clear</button>
         <span class="ot-pad-space"></span>
         <button class="btn btn-ghost" type="button" id="pad-cancel">Cancel</button>
-        <button class="btn" type="button" id="pad-use">{{ icon("check", 17) }}Use</button>
+        <button class="btn" type="button" id="pad-use">{{ icon("arrow-up", 17) }}Send to chat</button>
       </div>
     </div>
     <div class="ot-check-chip" id="check-chip" hidden><span>{{ icon("check", 16) }}Checking your answer: type it below, then send.</span><button class="btn btn-ghost" type="button" id="check-cancel">{{ icon("x", 16) }}Cancel</button></div>

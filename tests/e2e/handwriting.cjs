@@ -26,6 +26,12 @@ const [url, shot] = process.argv.slice(2);
   await draw([[140, 40], [170, 40], [150, 95]]);                        // 7
   await draw([[200, 40], [230, 90]]);
   await page.click("#pad-undo");                                         // remove the last stroke
+  await page.waitForSelector("#pad-marks .ot-mark", { timeout: 10000 }); // live mark after the pause
+  const marks = await page.$$eval("#pad-marks .ot-mark", (els) => els.map((e) => e.className));
+  const liveReading = (await page.textContent("#pad-reading")).trim();
+  const liveStatus = (await page.textContent("#pad-status")).trim();
+  const turnsBeforeUse = await page.locator(".ot-turn").count();
+  if (shot) await page.screenshot({ path: shot.replace(/\.png$/, "-live.png") });
   await page.click("#pad-use");
   await page.waitForSelector("#photo-preview:not([hidden])");
   const previewLabel = await page.textContent("#photo-name");
@@ -34,6 +40,10 @@ const [url, shot] = process.argv.slice(2);
   await page.waitForSelector(".ot-verdict");
   const result = {
     previewLabel,
+    marks,
+    liveReading,
+    liveStatus,
+    turnsBeforeUse,
     padHiddenAfterUse: await page.isHidden("#pad"),
     reading: await page.textContent(".ot-reading"),
     verdict: (await page.locator(".ot-verdict").last().textContent()).trim(),

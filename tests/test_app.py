@@ -419,3 +419,64 @@ def test_photo_check_without_handwriting_flag_is_not_read(
     fake.structured_replies["Verdict"] = [json.dumps({"verdict": "correct", "explanation": "Yes."})]
     got = events(send(client, intent="check", image=photo_bytes()))
     assert not any(e["type"] == "reading" for e in got)
+
+
+def marks_for(client: TestClient, fake: FakeModel, text: str, readable: bool = True) -> dict:  # type: ignore[type-arg]
+    fake.structured_replies["HandwritingReading"] = [
+        json.dumps({"readable": readable, "text": text})
+    ]
+    got = events(send_handwriting(client, intent="mark"))
+    kinds = [e["type"] for e in got]
+    assert not {"token", "verdict", "reading", "practice"} & set(kinds)  # no chat turn
+    return next(e for e in got if e["type"] == "marks")  # type: ignore[no-any-return]
+
+
+def test_ac_019_6_live_marks_show_the_first_wrong_line(client: TestClient, fake: FakeModel) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    got = marks_for(client, fake, "2x = 8\nx = 5")
+    assert [line["mark"] for line in got["lines"]] == ["correct", "wrong"]
+    assert [line["text"] for line in got["lines"]] == ["2x = 8", "x = 5"]
+
+
+def test_ac_019_6_live_marks_all_correct(client: TestClient, fake: FakeModel) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    got = marks_for(client, fake, "2x = 8\n\nx = 4")
+    assert [line["mark"] for line in got["lines"]] == ["correct", "correct"]
+    assert got["verdict"] == "correct"
+
+
+def test_ac_019_6_live_marks_unknown_without_a_checker(client: TestClient, fake: FakeModel) -> None:
+    join(client, tutor="science")
+    send(client, text="What gas do plants take in?")
+    got = marks_for(client, fake, "carbon dioxide")
+    assert [line["mark"] for line in got["lines"]] == ["unknown"]
+    assert got["verdict"] is None
+
+
+def test_ac_019_6_unreadable_pad_gives_no_marks(client: TestClient, fake: FakeModel) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    got = marks_for(client, fake, "", readable=False)
+    assert got["readable"] is False
+    assert got["lines"] == []
+
+
+def test_ac_019_6_live_marks_need_an_exercise(client: TestClient, fake: FakeModel) -> None:
+    join(client)
+    got = events(send_handwriting(client, intent="mark"))
+    assert any(e.get("code") == "no_exercise" for e in got)
+    assert "HandwritingReading" not in str(fake.calls)
+
+
+def test_ac_019_6_live_marks_leave_the_conversation_alone(
+    client: TestClient, fake: FakeModel
+) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    marks_for(client, fake, "2x = 8\nx = 5")
+    fake.structured_replies["Verdict"] = [json.dumps({"verdict": "correct", "explanation": "Hmm."})]
+    got = events(send(client, intent="check", text="x = 4"))
+    assert next(e for e in got if e["type"] == "state")["exercise"] == "2x + 3 = 11"
+    assert next(e for e in got if e["type"] == "verdict")["verdict"] == "correct"

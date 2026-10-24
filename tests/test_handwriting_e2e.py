@@ -63,7 +63,7 @@ def hub_url() -> Iterator[str]:
     thread.join(timeout=5)
 
 
-def test_ac_019_1_to_3_write_use_and_check(hub_url: str) -> None:
+def test_ac_019_1_to_3_and_6_write_mark_use_and_check(hub_url: str) -> None:
     done = subprocess.run(  # noqa: S603
         ["node", str(SCRIPT), hub_url, os.environ.get("E2E_SCREENSHOT", "")],  # noqa: S607
         capture_output=True,
@@ -73,6 +73,10 @@ def test_ac_019_1_to_3_write_use_and_check(hub_url: str) -> None:
     )
     result = json.loads(done.stdout.strip().splitlines()[-1])
     assert result["errors"] == []
+    assert result["marks"] == ["ot-mark wrong"]  # AC-019.6: x = 7 marked live by the checker
+    assert "x = 7" in result["liveReading"]
+    assert result["liveStatus"]
+    assert result["turnsBeforeUse"] == 2  # live marks add no chat turn
     assert result["previewLabel"] == "Your writing"  # AC-019.2
     assert result["padHiddenAfterUse"]
     assert "x = 7" in result["reading"]  # AC-019.3: only sent with the handwriting flag
