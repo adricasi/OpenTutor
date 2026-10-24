@@ -215,6 +215,17 @@ configuration unless stated otherwise.
   - AC-018.4: WHEN reading maths written in plain text THE SYSTEM SHALL say common notation in words (for example `x^2` as "x squared", `sqrt(9)` as "square root of 9", `*` as "times", `=` as "equals").
   - AC-018.5: WHEN reading aloud THE SYSTEM SHALL send nothing to the hub; the feature works with the hub unchanged.
 
+### REQ-019: Write by hand
+- Story: As a student who works on paper or with a pen, I want to write my exercise or my working by hand on the screen, so that I don't have to type maths or take a photo.
+- Priority: Should
+- Goals: G-1, G-2
+- Acceptance criteria:
+  - AC-019.1: WHEN the student taps "Write by hand" THE SYSTEM SHALL open a writing pad that accepts finger, stylus and Apple Pencil input, with Undo, Clear, Use and Cancel controls, without loading anything from outside the hub.
+  - AC-019.2: WHEN the student taps "Use" on a pad with writing THE SYSTEM SHALL attach the writing as an image to the next message, shown in the photo preview, and send it like a photo (REQ-004) when the student sends a question.
+  - AC-019.3: WHEN the student checks an answer written by hand THE SYSTEM SHALL have the model read the handwriting as text, show the student what it read ("I read: …") before the verdict, and check that text as a typed attempt (REQ-006, including the maths checker for Maths).
+  - AC-019.4: IF the handwriting can't be read THEN THE SYSTEM SHALL say so and suggest writing larger or typing the answer, without giving a verdict.
+  - AC-019.5: WHEN handwriting is sent THE SYSTEM SHALL handle it like a photo: in memory only, never written to disk or logs (NFR-002).
+
 ## Non-functional requirements
 | ID | Category | Requirement (measurable) | Verification |
 |---|---|---|---|
@@ -238,6 +249,7 @@ configuration unless stated otherwise.
 - Editing subject tutors from a web page — files are enough for operators and contributors in this version (REQ-008).
 - Interface and tutoring in languages other than English — product constraint; tutor definitions are kept translatable for later.
 - Voice input and server-side speech, native apps, content library integration, fine-tuning — product non-goals (on-device read-aloud is REQ-018).
+- Stroke-by-stroke marking on the page as the student writes (as `ipad-tutor/` does) — needs its on-device reader; the hub reads the finished writing instead (REQ-019).
 - Several hubs sharing load or syncing — one hub per group in this version.
 - Using the online demo link (REQ-017) as the normal way students reach the hub — it needs internet on the phones and the hub, sends traffic through Cloudflare, and Cloudflare's quick tunnels are documented as for testing only (no uptime guarantee, 200 in-flight requests).
 - Features of `ipad-tutor/` (handwriting canvas, voice, screen tutor) inside the hub — they live in the separate iPad tutor service (ADR-0008).

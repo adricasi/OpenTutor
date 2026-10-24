@@ -19,6 +19,12 @@ from .tutors import Tutor
 Intent = Literal["ask", "new_exercise", "hint", "answer", "check", "practice"]
 Event = dict[str, Any]
 
+READ_HANDWRITING = (
+    "The image is the student's handwritten answer or working for the exercise. Copy exactly "
+    "what is written as plain text, one line per written line, with maths in plain text "
+    "(x^2, 3/4, sqrt(9)). Do not correct, complete or solve anything. If you can't read it, "
+    "set readable to false."
+)
 MISTAKES_REMINDER = "AI can make mistakes. If something looks wrong, check with your teacher."
 
 LEVEL_INSTRUCTIONS = {
@@ -35,6 +41,11 @@ class ExerciseAnalysis(BaseModel):
     exercise_count: int = Field(ge=0)
     exercise_text: str
     topic: str
+
+
+class HandwritingReading(BaseModel):
+    readable: bool
+    text: str
 
 
 class TopicChoice(BaseModel):
@@ -208,6 +219,7 @@ class Tutoring:
         text: str,
         image: bytes | None,
         practice_answers: bool = False,
+        handwriting: bool = False,
     ) -> AsyncIterator[Event]:
         if intent == "ask" and (convo.exercise is None or image is not None):
             intent = "new_exercise"
@@ -225,7 +237,9 @@ class Tutoring:
             async for event in self._tutor_reply(tutor, convo, text, level, image):
                 yield event
         elif intent == "check":
-            async for event in self._check(tutor, convo, text, image, practice_answers):
+            async for event in self._check(
+                tutor, convo, text, image, practice_answers, handwriting
+            ):
                 yield event
         elif intent == "practice":
             async for event in self._practice(tutor, convo):
@@ -283,10 +297,25 @@ class Tutoring:
         text: str,
         image: bytes | None,
         practice_answers: bool = False,
+        handwriting: bool = False,
     ) -> AsyncIterator[Event]:
         if convo.exercise is None:
             yield _notice("no_exercise", "Which exercise is this answer for? Send it first.")
             return
+        if image is not None and handwriting:
+            # Read -> check -> explain (REQ-019, the idea of ipad-tutor/): the model only reads
+            # the writing; the student sees what was read, and the text is checked as typed.
+            reading = await self._structured(
+                self.messages(tutor, convo, READ_HANDWRITING, image), HandwritingReading
+            )
+            if reading is None or not reading.readable or not reading.text.strip():
+                yield _notice(
+                    "unreadable_handwriting",
+                    "I can't read that writing. Try writing bigger, or type your answer.",
+                )
+                return
+            yield {"type": "reading", "text": reading.text.strip()}
+            text, image = reading.text.strip(), None
         # Only answers sent from the practice panel count as practice answers, so a student's
         # own numbered working ("1. 2x = 8") is still checked against the main exercise.
         answers = _practice_answers(text, convo.practice) if practice_answers and not image else {}

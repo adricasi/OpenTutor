@@ -278,8 +278,18 @@ person). Everything else continues after the deadline.
   - Scope: root lint exclusion, references renamed to `ipad-tutor/`, README section with run
     steps and port plan, AGENTS.md and spec wording, ADR-0008
   - Done when: root checks pass with `ipad-tutor/` present; both apps documented.
-  - Status: Done in the repo (#19). Left: a CI job for `ipad-tutor` (`make test`, `make lint`;
+  - Status: Done in the repo (#20). Left: a CI job for `ipad-tutor` (`make test`, `make lint`;
     workflow change needs approval) and a test of the shared Ollama endpoint on a Mac.
+
+- [~] T-027: Write by hand
+  - Requirements: REQ-019
+  - Depends on: T-007, T-009, T-010
+  - Scope: writing pad in the chat (pointer events, undo, clear), handwriting flag on
+    `POST /api/messages`, `HandwritingReading` structured call before checking, `reading`
+    stream event, tests
+  - Done when: tests for AC-019.1 … AC-019.5 pass (API with the fake model; pad in a browser).
+  - Status: Built (#21): API tests and a browser test (draw, undo, use, check) pass with the
+    fake model. Left: real Gemma 4 handwriting reading on the hub and a real-tablet test.
 
 ## Coverage check
 | Requirement | Tasks |
@@ -302,6 +312,7 @@ person). Everything else continues after the deadline.
 | REQ-016 | T-019 |
 | REQ-017 | T-021 |
 | REQ-018 | T-025 |
+| REQ-019 | T-027 |
 | NFR-001 | T-002, T-013, T-016 (pip-audit and gitleaks already run in CI) |
 | NFR-002 | T-007, T-016 |
 | NFR-003 | T-016 |
