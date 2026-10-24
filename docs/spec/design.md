@@ -67,7 +67,7 @@ flowchart LR
 | Component | Responsibility | Tech / local runtime | Requirements |
 |---|---|---|---|
 | Web app (HTTP layer) | Pages, JSON/NDJSON endpoints, cookies, input limits, rate limits, security headers | FastAPI on one `uvicorn.Server` (**1 worker**) serving pre-created sockets: hotspot IP:8000 and 127.0.0.1:8000, plus 127.0.0.1:8001 for the tunnel in online demo mode | REQ-001…REQ-007, REQ-011, NFR-001 |
-| Pages and client script | Join, subject list, chat, teacher pages; camera/gallery input; client-side image downscale; streaming reader; quick actions; queue position | Jinja2 templates, one CSS file, one vanilla JS file; no framework, no CDN | REQ-001…REQ-007, REQ-009, NFR-003, NFR-005, NFR-010 |
+| Pages and client script | Join, subject list, chat, teacher pages; camera/gallery input; client-side image downscale; streaming reader; quick actions; queue position; read aloud with on-device voices (D-10) | Jinja2 templates, one CSS file, one vanilla JS file; no framework, no CDN | REQ-001…REQ-007, REQ-009, REQ-018, NFR-003, NFR-005, NFR-010 |
 | Session store | Create/resume/delete sessions, nickname uniqueness, 15-session cap, 30-min idle expiry sweep | Python dict + asyncio task, in memory | REQ-001, REQ-011, NFR-002, NFR-006 |
 | Tutor registry | Load and validate `tutors/<id>/tutor.toml` + `rubric.md` at start; enabled list | `tomllib` (stdlib) + Pydantic models with `extra="forbid"` | REQ-002, REQ-008 |
 | Prompt builder | Assemble the core rules + subject tutor + conversation into model messages; isolate untrusted content; apply the context budget | Versioned markdown files merged by `## section` (pattern from `tutor-ipad`'s `load_prompt`); core sections are locked; template function | REQ-005, REQ-010, AC-005.5 |
@@ -293,6 +293,7 @@ Each acceptance criterion maps to at least one automated test named after its ID
 | D-7 | Optional online demo link through a token-gated Cloudflare quick tunnel | [docs/adr/0006-offer-an-optional-online-demo-link.md](../adr/0006-offer-an-optional-online-demo-link.md) |
 | D-8 | sympy maths checker decides Maths verdicts when it can read the attempt | [docs/adr/0007-let-a-symbolic-checker-decide-maths-verdicts.md](../adr/0007-let-a-symbolic-checker-decide-maths-verdicts.md) |
 | D-9 | Four-level hint ladder (nudge, hint, next step, full solution on request), from `tutor-ipad`'s `shared.md` | — (design detail) |
+| D-10 | Read aloud in the browser with the Web Speech API (`speechSynthesis`), on-device voices only (`localService`); no server part | — (design detail) |
 
 ## Open questions and risks
 - Q-1 (product.md): GPU model/VRAM → sets the default model (E4B, E2B or 26B-A4B) and `OLLAMA_NUM_PARALLEL`; settled by T-001.
@@ -340,6 +341,7 @@ which AC-004.6 forbids).
 | REQ-015 | Data model (`ExerciseAnalysis.suggested_tutor_id`) · Interfaces (`suggest_tutor` notice) |
 | REQ-016 | Components (Hub CLI status line) · Reliability (Ollama stops) |
 | REQ-017 | Components (Online demo tunnel, Hub CLI) · Security design (access control, threats) · ADR-0006 |
+| REQ-018 | Components (Pages and client script) · D-10 |
 | NFR-001 | Security design · Components (Web app, Model runtime) |
 | NFR-002 | Data model · Security design (Data protection) · ADR-0005 |
 | NFR-003 | Overview · Components (Pages) · Testing (Offline) |

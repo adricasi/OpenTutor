@@ -204,6 +204,17 @@ configuration unless stated otherwise.
   - AC-017.6: IF the online demo link drops THEN THE SYSTEM SHALL open a new one and print its QR code; IF the hub has no internet THEN THE SYSTEM SHALL keep serving on the hub Wi-Fi and print that the online demo link is unavailable.
   - AC-017.7: WHEN the hub starts in online demo mode THE SYSTEM SHALL issue a new access token, so QR codes from earlier runs (for example in a demo video) stop working; the cookie set from the token SHALL last only until the hub stops, and the token SHALL be removed from the address bar after the first request.
 
+### REQ-018: Read tutor replies aloud
+- Story: As a student who finds reading hard, I want the tutor's reply read aloud on my phone, so that I can follow the explanation.
+- Priority: Could
+- Goals: G-1, G-2, G-3
+- Acceptance criteria:
+  - AC-018.1: WHEN the student's browser offers an English text-to-speech voice that runs on the device THE SYSTEM SHALL show a "Read aloud" control on each tutor reply, once the reply has finished arriving.
+  - AC-018.2: WHEN the student taps "Read aloud" THE SYSTEM SHALL read that reply in English with an on-device voice and change the control to "Stop"; WHEN the student taps "Stop" or starts reading another reply THE SYSTEM SHALL stop the current reading.
+  - AC-018.3: IF the browser has no speech synthesis or no on-device English voice THEN THE SYSTEM SHALL not show the control (voices that need the internet are never used, so no reply text leaves the phone).
+  - AC-018.4: WHEN reading maths written in plain text THE SYSTEM SHALL say common notation in words (for example `x^2` as "x squared", `sqrt(9)` as "square root of 9", `*` as "times", `=` as "equals").
+  - AC-018.5: WHEN reading aloud THE SYSTEM SHALL send nothing to the hub; the feature works with the hub unchanged.
+
 ## Non-functional requirements
 | ID | Category | Requirement (measurable) | Verification |
 |---|---|---|---|
@@ -226,7 +237,7 @@ configuration unless stated otherwise.
 - HTTPS on the local network — needs certificate setup on every student phone; accepted risk on a password-protected hub Wi-Fi with no internet (recorded in design security section).
 - Editing subject tutors from a web page — files are enough for operators and contributors in this version (REQ-008).
 - Interface and tutoring in languages other than English — product constraint; tutor definitions are kept translatable for later.
-- Voice input/output, native apps, content library integration, fine-tuning — product non-goals.
+- Voice input and server-side speech, native apps, content library integration, fine-tuning — product non-goals (on-device read-aloud is REQ-018).
 - Several hubs sharing load or syncing — one hub per group in this version.
 - Using the online demo link (REQ-017) as the normal way students reach the hub — it needs internet on the phones and the hub, sends traffic through Cloudflare, and Cloudflare's quick tunnels are documented as for testing only (no uptime guarantee, 200 in-flight requests).
 - Features of `tutor-ipad/` (handwriting canvas, voice, screen tutor) — separate product.
