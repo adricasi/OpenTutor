@@ -117,17 +117,64 @@ def test_cli_start_refuses_unsafe_settings(capsys) -> None:  # type: ignore[no-u
 
 
 def test_ac_012_2_qr_code_prints_on_a_cp1252_console(monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    import segno
-
     from opentutor import cli
 
     raw = io.BytesIO()
     console = io.TextIOWrapper(raw, encoding="cp1252")
     monkeypatch.setattr(cli.sys, "stdout", console)
     cli.utf8_output()
-    segno.make("http://10.42.0.1:8000/", error="m").terminal(compact=True, border=2)
+    cli.print_qr("http://10.42.0.1:8000/")
     console.flush()
     assert "█".encode() in raw.getvalue()
+
+
+def test_ac_012_2_qr_code_is_dark_on_light_whatever_the_terminal_theme(capsys) -> None:  # type: ignore[no-untyped-def]
+    import segno
+
+    from opentutor import cli
+
+    cli.print_qr("http://10.42.0.1:8000/")
+    lines = capsys.readouterr().out.splitlines()
+    # Explicit colours: on a light-themed terminal the default colours would invert the code,
+    # and phone cameras don't read inverted QR codes.
+    assert all(line.startswith(cli.QR_COLORS) and line.endswith(cli.QR_RESET) for line in lines)
+    halves = {" ": (0, 0), "▀": (1, 0), "▄": (0, 1), "█": (1, 1)}
+    printed = []
+    for line in lines:
+        modules = line.removeprefix(cli.QR_COLORS).removesuffix(cli.QR_RESET)
+        pairs = [halves[char] for char in modules]
+        printed += [[top for top, _ in pairs], [bottom for _, bottom in pairs]]
+    qr = segno.make("http://10.42.0.1:8000/", error="m")
+    expected = [list(row) for row in qr.matrix_iter(border=4)]
+    assert printed[: len(expected)] == expected  # includes the 4-module quiet zone
+
+
+def start_hub(monkeypatch, *args: str) -> None:  # type: ignore[no-untyped-def]
+    from opentutor import cli
+
+    monkeypatch.setenv("OPENTUTOR_MODEL_BACKEND", "fake")
+    monkeypatch.setattr(cli, "address_available", lambda _host: True)
+    monkeypatch.setattr(cli, "warm_up", lambda _settings: None)
+    monkeypatch.setattr(cli, "serve", lambda *_args: None)
+    assert cli.main(["start", *args]) == 0
+
+
+def test_ac_012_2_qr_code_opens_the_hotspot_address(monkeypatch, capsys) -> None:  # type: ignore[no-untyped-def]
+    from opentutor import cli
+
+    start_hub(monkeypatch, "--host", "10.42.0.1")
+    out = capsys.readouterr().out
+    assert cli.QR_COLORS in out
+    assert "open http://10.42.0.1:8000/" in out
+
+
+def test_ac_012_5_no_qr_code_for_a_loopback_address(monkeypatch, capsys) -> None:  # type: ignore[no-untyped-def]
+    from opentutor import cli
+
+    start_hub(monkeypatch)  # default host 127.0.0.1: a phone scanning it would open itself
+    out = capsys.readouterr().out
+    assert cli.QR_COLORS not in out
+    assert "--host" in out
 
 
 def test_cli_setup_runs(monkeypatch) -> None:  # type: ignore[no-untyped-def]

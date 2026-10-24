@@ -71,7 +71,7 @@ def start_online_demo(settings: Settings, token: str) -> None:
                 print(f"  Online demo link unavailable ({error}); the hub Wi-Fi still works.")
                 return
             link = with_token(url + "/", token)
-            segno.make(link, error="m").terminal(compact=True, border=2)
+            print_qr(link)
             print(
                 f"  ONLINE DEMO (internet, via Cloudflare — not for students' daily use): {link}\n"
             )
@@ -97,6 +97,36 @@ def warm_up(settings: Settings) -> None:
         print(f"  warning: model warm-up failed ({error}); the first question may be slow.")
 
 
+# Black on bright white, whatever the terminal's theme: segno's compact output uses the
+# terminal's own colours, which inverts the code on a light theme, and phone cameras
+# don't read inverted QR codes.
+QR_COLORS = "\x1b[30;107m"
+QR_RESET = "\x1b[0m"
+HALF_BLOCKS = {(0, 0): " ", (1, 0): "▀", (0, 1): "▄", (1, 1): "█"}
+
+
+def enable_ansi_colors() -> None:
+    """Windows consoles show ANSI colours only once virtual terminal processing is on."""
+    if sys.platform == "win32":
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        stdout = kernel32.GetStdHandle(-11)
+        mode = ctypes.c_uint32()
+        if kernel32.GetConsoleMode(stdout, ctypes.byref(mode)):
+            kernel32.SetConsoleMode(stdout, mode.value | 0x0004)
+
+
+def print_qr(link: str) -> None:
+    """Print a QR code that phone cameras can scan, two modules per character (AC-012.2)."""
+    rows = [list(row) for row in segno.make(link, error="m").matrix_iter(border=4)]
+    if len(rows) % 2:
+        rows.append([0] * len(rows[0]))  # one more light quiet-zone row
+    for top, bottom in zip(rows[0::2], rows[1::2], strict=True):
+        line = "".join(HALF_BLOCKS[pair] for pair in zip(top, bottom, strict=True))
+        print(QR_COLORS + line + QR_RESET)
+
+
 def utf8_output() -> None:
     """Print UTF-8 so the QR code's block characters survive a Windows cp1252 console (AC-012.2)."""
     for stream in (sys.stdout, sys.stderr):
@@ -106,6 +136,7 @@ def utf8_output() -> None:
 
 def main(argv: list[str] | None = None) -> int:
     utf8_output()
+    enable_ansi_colors()
     parser = argparse.ArgumentParser(prog="opentutor", description="OpenTutor homework hub")
     sub = parser.add_subparsers(dest="command", required=True)
     start = sub.add_parser("start", help="start the hub")
@@ -164,8 +195,13 @@ def main(argv: list[str] | None = None) -> int:
     warm_up(settings)
     url = f"http://{settings.host}:{settings.port}/"
     print()
-    segno.make(url, error="m").terminal(compact=True, border=2)
-    print(f"\n  OpenTutor is ready. Students: join the hub Wi-Fi and open {url}")
+    if is_loopback(settings.host):
+        # A phone that scans a loopback address opens itself, so a QR code can't work here.
+        print(f"  OpenTutor is ready on this laptop only: {url}")
+        print("  Phones can't open this address. To let them in, start with --host <hotspot IP>.")
+    else:
+        print_qr(url)
+        print(f"\n  OpenTutor is ready. Students: join the hub Wi-Fi and open {url}")
     print(f"  Model: {settings.model if settings.model_backend == 'ollama' else 'fake (dev)'}\n")
     app = create_app(settings)
     print(
