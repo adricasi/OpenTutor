@@ -38,7 +38,7 @@ We are entering **Best Use of Gemma 4** and **Best Open-Source AI Project**. The
 | What it is and who it's for | Done | [Top of this README](#opentutor) |
 | How to run it | Done | [Run a hub](#run-a-hub-operator-guide) and [Develop](#develop) |
 | What expertise is inside, and where it comes from | Done | [What expertise is inside](#what-expertise-is-inside-and-where-it-comes-from) |
-| The model and a link to its license | Done | [The model](#the-model); the licence wording is still to be confirmed on the official Gemma 4 model card |
+| The model and a link to its license | Done | [The model](#the-model); Apache 2.0, confirmed on Google's model card |
 | Proof that it works better with your part | **Open** | [Targets and method](#proof-that-it-works-better-with-our-part) are set; the measured results with real Gemma 4 on the hub laptop are still to be run and filled in |
 
 ### What we have built
@@ -122,8 +122,8 @@ at the end of the day (this clears everything).
 [Gemma 4](https://ollama.com/library/gemma4), served locally through Ollama. The default tag
 is `gemma4:e4b` ([`config.py`](src/opentutor/config.py)) with `gemma4:e2b` as a smaller
 fallback; the choice is recorded in [ADR-0004](docs/adr/0004-serve-gemma-4-through-ollama.md).
-Google announced Gemma 4 under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0);
-confirm the licence on the official model card for the exact tag you download. No student data
+Gemma 4 is released under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0),
+as stated on [Google's model card on Hugging Face](https://huggingface.co/google/gemma-4-E4B-it). No student data
 is sent to any external model API.
 
 ## Proof that it works better with our part
@@ -195,5 +195,8 @@ uv run pip-audit                         # dependency vulnerabilities
 Configuration: `OPENTUTOR_*` environment variables or `opentutor.toml` (see
 `src/opentutor/config.py`). Workflow: spec-driven (`docs/spec/`), one task per PR.
 
+## Team
+Arnau Miàs, Adrià Casals and Laura Rovira.
+
 ## License
-MIT — see [LICENSE](LICENSE).
+MIT, copyright (c) 2026 Arnau Miàs, Adrià Casals and Laura Rovira — see [LICENSE](LICENSE).

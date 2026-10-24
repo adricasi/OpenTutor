@@ -19,7 +19,7 @@ the evidence in this repository. Items marked **open** are not done yet.
 | What it is and who it's for | Done | Top of [README](../../README.md) |
 | How to run it | Done | "Run a hub (operator guide)" and "Develop" |
 | What expertise is inside, and where it comes from | Done | "What expertise is inside, and where it comes from" |
-| The model and a link to its license | Done | "The model". **Open:** confirm the licence wording on the official Gemma 4 model card. |
+| The model and a link to its license | Done | "The model". Apache 2.0, confirmed on [Google's model card on Hugging Face](https://huggingface.co/google/gemma-4-E4B-it). |
 | Proof that it works better with your part | **Open** | Targets and method are in "Proof that it works better with our part". The measured results with real Gemma 4 are still to be run on the hub laptop and filled in. |
 
 ## Not covered by the checklist but needed for the demo
