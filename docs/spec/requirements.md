@@ -220,11 +220,13 @@ configuration unless stated otherwise.
 - Priority: Should
 - Goals: G-1, G-2
 - Acceptance criteria:
-  - AC-019.1: WHEN the student taps "Write by hand" THE SYSTEM SHALL open a writing pad that accepts finger, stylus and Apple Pencil input, with Undo, Clear, Use and Cancel controls, without loading anything from outside the hub.
-  - AC-019.2: WHEN the student taps "Use" on a pad with writing THE SYSTEM SHALL attach the writing as an image to the next message, shown in the photo preview, and send it like a photo (REQ-004) when the student sends a question.
+  - AC-019.1: WHEN the student taps "Write by hand" THE SYSTEM SHALL open a writing pad that accepts finger, stylus and Apple Pencil input, with Undo, Clear, "Send to chat" and Cancel controls, without loading anything from outside the hub.
+  - AC-019.2: WHEN the student taps "Send to chat" on a pad with writing THE SYSTEM SHALL attach the writing as an image to the next message, shown in the photo preview, and send it like a photo (REQ-004) when the student sends a question.
   - AC-019.3: WHEN the student checks an answer written by hand THE SYSTEM SHALL have the model read the handwriting as text, show the student what it read ("I read: …") before the verdict, and check that text as a typed attempt (REQ-006, including the maths checker for Maths).
   - AC-019.4: IF the handwriting can't be read THEN THE SYSTEM SHALL say so and suggest writing larger or typing the answer, without giving a verdict.
   - AC-019.5: WHEN handwriting is sent THE SYSTEM SHALL handle it like a photo: in memory only, never written to disk or logs (NFR-002).
+  - AC-019.6: WHEN the student pauses writing on the pad for about 2 seconds while an exercise is set THE SYSTEM SHALL read the pad and show, next to each written line, a mark decided by the maths checker for Maths (✓ for a correct step, ✗ for the first wrong step, ? when it can't decide or for other subjects), with the lines it read listed under the pad, without adding a chat turn or changing the hint level.
+  - AC-019.7: WHILE a live read is in flight THE SYSTEM SHALL send no second one, SHALL discard its result if the student wrote, undid or cleared since, and SHALL wait for it before sending a chat message.
 
 ### REQ-020: Speak instead of typing
 - Story: As a student who finds typing or spelling hard, I want to say my question or answer out loud, so that I can ask for help in my own words.

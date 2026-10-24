@@ -265,6 +265,16 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .ot-pad-title span { color: var(--muted-foreground); font-size: 14px; }
 .ot-pad canvas { display: block; width: 100%; height: 260px; border-radius: 6px; background: #ffffff; box-shadow: inset 0 0 0 1px var(--border); touch-action: none; cursor: crosshair;
   background-image: repeating-linear-gradient(to bottom, transparent 0 51px, var(--secondary) 51px 52px); }
+.ot-pad-surface { position: relative; }
+.ot-pad-marks { position: absolute; inset: 0; pointer-events: none; }
+.ot-mark { position: absolute; transform: translateY(-50%); width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 18px; font-weight: 700; color: #ffffff; background: #6b756f; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.ot-mark.correct { background: var(--success); }
+.ot-mark.wrong { background: var(--destructive); }
+.ot-pad-status { min-height: 22px; margin: 8px 0 0; font-size: 15px; color: var(--primary); font-weight: 500; }
+.ot-pad-reading { margin: 4px 0 0; padding-left: 22px; font-size: 14px; color: var(--muted-foreground); }
+.ot-pad-reading li { margin: 2px 0; }
+.ot-pad-reading .wrong { color: var(--destructive); font-weight: 600; }
+.ot-pad-reading .correct { color: var(--success); }
 .ot-pad-tools { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; align-items: center; }
 .ot-pad-space { flex: 1; }
 .btn.listening { background: var(--math-surface); color: var(--math-ink); animation: ot-pulse 1.2s infinite; }

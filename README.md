@@ -90,7 +90,10 @@ See the [architecture diagram](#architecture) above.
 - **Write by hand:** the ✍️ button opens a writing pad (finger, stylus or Apple Pencil). A
   handwritten question is read like a photo; a handwritten answer is read into text, shown to
   the student ("I read your writing as: …") and then checked, by the maths checker for Maths.
-  This brings the iPad tutor's read → check → explain loop to every phone and tablet.
+  While the student writes, each pause of about 2 seconds marks the lines live on the pad
+  (✓ correct step, ✗ first wrong step, ? not sure), with no need to send anything; "Send to
+  chat" then asks the tutor for help with that writing. This brings the iPad tutor's
+  read → check → explain loop to every phone and tablet.
 - **Speak:** the 🎤 button in the message box (or "Say it out loud") turns the student's
   voice into text in the box, to check before sending. It uses the browser's speech
   recognition where the page may use it (the online demo link, or the hub laptop itself);

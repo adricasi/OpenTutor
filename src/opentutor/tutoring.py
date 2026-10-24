@@ -16,7 +16,7 @@ from .model import Message, ModelClient, ModelError
 from .sessions import Conversation, Exercise, Turn
 from .tutors import Tutor
 
-Intent = Literal["ask", "new_exercise", "hint", "answer", "check", "practice"]
+Intent = Literal["ask", "new_exercise", "hint", "answer", "check", "practice", "mark"]
 Event = dict[str, Any]
 
 READ_HANDWRITING = (
@@ -244,6 +244,9 @@ class Tutoring:
         elif intent == "practice":
             async for event in self._practice(tutor, convo):
                 yield event
+        elif intent == "mark":
+            async for event in self._mark(tutor, convo, image):
+                yield event
 
     async def _new_exercise(
         self, tutor: Tutor, convo: Conversation, text: str, image: bytes | None
@@ -388,6 +391,37 @@ class Tutoring:
         result = await check_attempt(convo.exercise.text, convo.exercise.typed, text)
         return result if result.decided and result.verdict else None
 
+    async def _mark(
+        self, tutor: Tutor, convo: Conversation, image: bytes | None
+    ) -> AsyncIterator[Event]:
+        """Live marks for the writing pad (AC-019.6): read the pad, mark each line, no chat turn.
+
+        Like ipad-tutor, the deterministic checker owns the marks; there is no explanation
+        call, so a mark costs one model call (the reading).
+        """
+        if convo.exercise is None:
+            yield _notice("no_exercise", "Send the exercise first, then write your working.")
+            return
+        if image is None:
+            yield _notice("no_writing", "Write something on the pad first.")
+            return
+        reading = await self._structured(
+            self.messages(tutor, convo, READ_HANDWRITING, image), HandwritingReading
+        )
+        lines = [line.strip() for line in (reading.text if reading else "").splitlines()]
+        lines = [line for line in lines if line]
+        if reading is None or not reading.readable or not lines:
+            yield {"type": "marks", "readable": False, "lines": [], "verdict": None}
+            return
+        decision = None
+        if tutor.config.checker == "maths":
+            decision = await check_attempt(
+                convo.exercise.text, convo.exercise.typed, "\n".join(lines)
+            )
+        marks = _line_marks(lines, decision)
+        verdict = decision.verdict if decision and decision.decided else None
+        yield {"type": "marks", "readable": True, "lines": marks, "verdict": verdict}
+
     async def _practice(self, tutor: Tutor, convo: Conversation) -> AsyncIterator[Event]:
         if convo.exercise is None:
             yield _notice("no_exercise", "Which topic do you want to practise? Send an exercise.")
@@ -441,6 +475,23 @@ _FALLBACK_EXPLANATION = {
     "partly_correct": "Your steps are right so far. Keep going to reach the answer.",
     "not_yet_correct": "Look again at the step shown below. Something went wrong there.",
 }
+
+
+def _squash(value: str) -> str:
+    return re.sub(r"\s+", "", value).lower()
+
+
+def _line_marks(lines: list[str], decision: CheckResult | None) -> list[dict[str, str]]:
+    """One mark per read line: correct / wrong / unknown, from the checker's decision."""
+    marks = ["unknown"] * len(lines)
+    if decision and decision.decided and decision.verdict in ("correct", "partly_correct"):
+        marks = ["correct"] * len(lines)
+    elif decision and decision.decided and decision.first_error_step:
+        wrong = _squash(decision.first_error_step)
+        index = next((i for i, line in enumerate(lines) if wrong and wrong in _squash(line)), None)
+        if index is not None:
+            marks = ["correct"] * index + ["wrong"] + ["unknown"] * (len(lines) - index - 1)
+    return [{"text": line, "mark": mark} for line, mark in zip(lines, marks, strict=True)]
 
 
 def _practice_answers(text: str, practice: list[str]) -> dict[int, str]:

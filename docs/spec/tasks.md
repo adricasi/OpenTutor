@@ -287,9 +287,10 @@ person). Everything else continues after the deadline.
   - Scope: writing pad in the chat (pointer events, undo, clear), handwriting flag on
     `POST /api/messages`, `HandwritingReading` structured call before checking, `reading`
     stream event, tests
-  - Done when: tests for AC-019.1 … AC-019.5 pass (API with the fake model; pad in a browser).
-  - Status: Built (#21): API tests and a browser test (draw, undo, use, check) pass with the
-    fake model. Left: real Gemma 4 handwriting reading on the hub and a real-tablet test.
+  - Done when: tests for AC-019.1 … AC-019.7 pass (API with the fake model; pad in a browser).
+  - Status: Built (#21); live marks on pause (AC-019.6/019.7, `mark` intent) added after.
+    API tests and a browser test (draw, live mark, send, check) pass with the fake model.
+    Left: real Gemma 4 handwriting reading on the hub and a real-tablet test.
 
 - [~] T-028: Speak instead of typing; make Listen visible
   - Requirements: REQ-020, AC-018.3 (changed)
@@ -298,7 +299,7 @@ person). Everything else continues after the deadline.
     first-use notice; Listen shown on every reply when speech synthesis exists
   - Done when: browser tests with stubbed speech APIs pass for AC-020.1 … AC-020.5 and AC-018.3.
   - Follow-up: on-hub speech-to-text so speaking works offline on every phone.
-  - Status: Built (#22): browser tests with stubbed speech APIs pass (speech fills the box,
+  - Status: Built (#23): browser tests with stubbed speech APIs pass (speech fills the box,
     blocked or missing recognition falls back to the keyboard microphone, Listen shown without an
     offline voice and never uses an online one). Left: real phones.
 
