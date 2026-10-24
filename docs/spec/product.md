@@ -58,6 +58,7 @@ Wi-Fi, with zero mobile data and nothing to install.
 - Operator setup: README, setup script, model download, starting the hub, connecting phones.
 - Evaluation set and benchmark scripts that measure the metrics above.
 - Deterministic maths checking: a Maths attempt that can be parsed is checked by a symbolic checker, which decides the verdict; the model explains it.
+- **Read aloud** (Could): tutor replies read by the phone's own on-device text-to-speech, for students who find reading hard.
 - Optional **online demo link** (off by default): a temporary public HTTPS link so judges or remote testers can try a hub over the internet (Could).
 - Open-source repository (MIT), demo video.
 
@@ -65,7 +66,7 @@ Wi-Fi, with zero mobile data and nothing to install.
 - Accounts, passwords, student profiles or history kept beyond the hub's running session.
 - Any cloud backend, cloud model API, telemetry or analytics.
 - Native mobile apps.
-- Voice input/output (ElevenLabs out of scope), payments (Plata out of scope).
+- Voice input and server-side speech (ElevenLabs out of scope), payments (Plata out of scope). On-device read-aloud of tutor replies is in scope (REQ-018); spoken questions may follow once T-001 shows whether Gemma 4 takes audio on the hub.
 - Languages other than English for the interface and tutoring in this version.
 - Fine-tuning the model (roadmap: LoRA on teacher-approved hint dialogues).
 - Hosting or integrating a content library (Kolibri, RACHEL) in this version.

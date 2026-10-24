@@ -262,6 +262,14 @@ latency) → T-002 → T-003 → T-004 → T-005 → T-007 → T-008 → T-009 �
 and README only) → T-022. Two people can work in parallel from T-002 (worktree per
 person). Everything else continues after the deadline.
 
+- [~] T-025: Read tutor replies aloud
+  - Requirements: REQ-018
+  - Depends on: T-005
+  - Scope: `web/static/app.js` (Read aloud / Stop control, on-device English voice
+    selection, maths-to-words), styles; browser test with a stubbed `speechSynthesis`
+  - Done when: the browser test for AC-018.1 … AC-018.5 passes; a manual check on one
+    Android and one iOS phone confirms an on-device voice reads a reply with Wi-Fi only.
+
 ## Coverage check
 | Requirement | Tasks |
 |---|---|
@@ -282,6 +290,7 @@ person). Everything else continues after the deadline.
 | REQ-015 | T-007, T-020 |
 | REQ-016 | T-019 |
 | REQ-017 | T-021 |
+| REQ-018 | T-025 |
 | NFR-001 | T-002, T-013, T-016 (pip-audit and gitleaks already run in CI) |
 | NFR-002 | T-007, T-016 |
 | NFR-003 | T-016 |

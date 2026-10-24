@@ -11,11 +11,79 @@
   const buttons = Array.from(document.querySelectorAll("button"));
   const VERDICTS = { correct: "✅ Correct", partly_correct: "🟡 Partly correct", not_yet_correct: "❌ Not yet correct" };
 
+  // Read aloud (REQ-018): the phone's own text-to-speech, on-device English voices only,
+  // so no reply text leaves the phone. Nothing is sent to the hub.
+  const speech = (function () {
+    const synth = window.speechSynthesis;
+    let voice = null;
+    let playing = null;
+
+    function pickVoice() {
+      if (!synth) return;
+      const local = synth.getVoices().filter((v) => v.localService && /^en([-_]|$)/i.test(v.lang));
+      voice = local.find((v) => /^en[-_](GB|US)/i.test(v.lang)) || local[0] || null;
+      document.querySelectorAll(".speak").forEach((b) => { b.hidden = !voice; });
+    }
+
+    function words(text) {
+      return text
+        .replace(/\*\*/g, "")
+        .replace(/sqrt\(/g, "square root of (")
+        .replace(/\^2(?!\d)/g, " squared")
+        .replace(/\^3(?!\d)/g, " cubed")
+        .replace(/\^/g, " to the power of ")
+        .replace(/(\d)\s*\/\s*(\d)/g, "$1 over $2")
+        .replace(/\*/g, " times ")
+        .replace(/\s-\s/g, " minus ")
+        .replace(/=/g, " equals ");
+    }
+
+    function reset(button) {
+      button.textContent = "🔊 Read aloud";
+      button.setAttribute("aria-pressed", "false");
+    }
+
+    function toggle(button, text) {
+      const wasMine = playing === button;
+      synth.cancel();
+      if (playing) reset(playing);
+      playing = null;
+      if (wasMine || !voice) return;
+      const utterance = new SpeechSynthesisUtterance(words(text));
+      utterance.voice = voice;
+      utterance.lang = voice.lang;
+      utterance.onend = utterance.onerror = () => { if (playing === button) { reset(button); playing = null; } };
+      playing = button;
+      button.textContent = "⏹ Stop";
+      button.setAttribute("aria-pressed", "true");
+      synth.speak(utterance);
+    }
+
+    function attach(bubbleEl) {
+      if (!synth || bubbleEl.dataset.speak) return;
+      bubbleEl.dataset.speak = "1";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "speak";
+      button.hidden = !voice;
+      reset(button);
+      button.addEventListener("click", () => toggle(button, bubbleEl.textContent));
+      bubbleEl.after(button);
+    }
+
+    if (synth) {
+      pickVoice();
+      synth.addEventListener("voiceschanged", pickVoice);
+    }
+    return { attach };
+  })();
+
   function bubble(kind, content) {
     const p = document.createElement("p");
     p.className = "msg " + kind;
     if (content) p.textContent = content;
     log.appendChild(p);
+    if (kind === "tutor" && content) speech.attach(p);
     p.scrollIntoView({ block: "end" });
     return p;
   }
@@ -86,11 +154,13 @@
     } catch (e) {
       bubble("notice", "Connection lost. Check you're on the hub Wi-Fi and try again.");
     } finally {
+      if (reply) speech.attach(reply);
       status.textContent = "";
       busy(false);
     }
   }
 
+  document.querySelectorAll(".msg.tutor").forEach((p) => speech.attach(p));
   form.addEventListener("submit", (e) => { e.preventDefault(); send("ask"); });
   document.querySelectorAll("[data-intent]").forEach((b) => b.addEventListener("click", () => send(b.dataset.intent)));
   imageInput.addEventListener("change", () => { photoName.textContent = imageInput.files[0] ? "Photo ready" : ""; });
