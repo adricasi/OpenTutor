@@ -365,3 +365,57 @@ def test_network_error_mid_reply_ends_stream_cleanly(settings: Settings) -> None
     assert got[-1]["type"] == "error"
     assert got[-1]["retryable"] is True
     assert send(client, text="again").status_code == 200  # not stuck in flight
+
+
+def send_handwriting(client: TestClient, intent: str = "check"):  # type: ignore[no-untyped-def]
+    files = {"image": ("handwriting.png", photo_bytes(fmt="PNG"), "image/png")}
+    return client.post("/api/messages", data={"intent": intent, "handwriting": "1"}, files=files)
+
+
+def test_ac_019_3_handwriting_read_shown_and_checked_as_typed(
+    client: TestClient, fake: FakeModel
+) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    fake.structured_replies["HandwritingReading"] = [
+        json.dumps({"readable": True, "text": "x = 7"})
+    ]
+    fake.structured_replies["Verdict"] = [json.dumps({"verdict": "correct", "explanation": "Hmm."})]
+    got = events(send_handwriting(client))
+    kinds = [e["type"] for e in got]
+    assert kinds.index("reading") < kinds.index("verdict")  # the student sees what was read first
+    assert next(e for e in got if e["type"] == "reading")["text"] == "x = 7"
+    # Checked as typed text, so the maths checker decides (x = 7 is wrong) despite the model.
+    assert next(e for e in got if e["type"] == "verdict")["verdict"] == "not_yet_correct"
+    assert "images" not in fake.calls[-1][-1]  # the explanation call gets the text, not the image
+
+
+def test_ac_019_4_unreadable_handwriting_gives_no_verdict(
+    client: TestClient, fake: FakeModel
+) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    fake.structured_replies["HandwritingReading"] = [json.dumps({"readable": False, "text": ""})]
+    got = events(send_handwriting(client))
+    assert any(e.get("code") == "unreadable_handwriting" for e in got)
+    assert not any(e["type"] == "verdict" for e in got)
+
+
+def test_ac_019_2_handwritten_question_starts_an_exercise(
+    client: TestClient, fake: FakeModel
+) -> None:
+    join(client)
+    fake.structured_replies["ExerciseAnalysis"] = [analysis()]
+    got = events(send_handwriting(client, intent="ask"))
+    assert any(e["type"] == "token" for e in got)
+    assert next(e for e in got if e["type"] == "state")["exercise"] == "2x+3=11"
+
+
+def test_photo_check_without_handwriting_flag_is_not_read(
+    client: TestClient, fake: FakeModel
+) -> None:
+    join(client)
+    send(client, text="Describe photosynthesis")
+    fake.structured_replies["Verdict"] = [json.dumps({"verdict": "correct", "explanation": "Yes."})]
+    got = events(send(client, intent="check", image=photo_bytes()))
+    assert not any(e["type"] == "reading" for e in got)

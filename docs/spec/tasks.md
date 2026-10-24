@@ -288,6 +288,8 @@ person). Everything else continues after the deadline.
     `POST /api/messages`, `HandwritingReading` structured call before checking, `reading`
     stream event, tests
   - Done when: tests for AC-019.1 … AC-019.5 pass (API with the fake model; pad in a browser).
+  - Status: Built (#21): API tests and a browser test (draw, undo, use, check) pass with the
+    fake model. Left: real Gemma 4 handwriting reading on the hub and a real-tablet test.
 
 ## Coverage check
 | Requirement | Tasks |

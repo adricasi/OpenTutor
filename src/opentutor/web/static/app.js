@@ -271,10 +271,10 @@
     preview.hidden = true;
   }
 
-  function restorePhoto(file) {
-    photo = { file: file, url: URL.createObjectURL(file) };
+  function restorePhoto(file, handwriting) {
+    photo = { file: file, url: URL.createObjectURL(file), handwriting: !!handwriting };
     document.getElementById("photo-thumb").src = photo.url;
-    document.getElementById("photo-name").textContent = file.name || "Photo";
+    document.getElementById("photo-name").textContent = handwriting ? "Your writing" : file.name || "Photo";
     preview.hidden = false;
   }
 
@@ -323,6 +323,97 @@
     practiceBox.hidden = false;
   }
 
+  // Writing pad (REQ-019): finger, stylus or Apple Pencil via pointer events. "Use" turns
+  // the writing into an image on white, attached like a photo but flagged as handwriting.
+  const pad = (function () {
+    const box = document.getElementById("pad");
+    const canvas = document.getElementById("pad-canvas");
+    const ctx = canvas.getContext("2d");
+    let strokes = [];
+    let current = null;
+
+    function size() {
+      const ratio = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.round(rect.width * ratio);
+      canvas.height = Math.round(rect.height * ratio);
+      redraw();
+    }
+
+    function redraw(target) {
+      const c = target || ctx;
+      const w = c.canvas.width;
+      const h = c.canvas.height;
+      if (target) { c.fillStyle = "#ffffff"; c.fillRect(0, 0, w, h); } else c.clearRect(0, 0, w, h);
+      c.strokeStyle = "#1b231d";
+      c.lineCap = "round";
+      c.lineJoin = "round";
+      c.lineWidth = Math.max(2.5, w / 220);
+      strokes.forEach((stroke) => {
+        c.beginPath();
+        stroke.forEach((pt, i) => { const x = pt[0] * w; const y = pt[1] * h; if (i === 0) c.moveTo(x, y); else c.lineTo(x, y); });
+        if (stroke.length === 1) c.lineTo(stroke[0][0] * w + 0.1, stroke[0][1] * h);
+        c.stroke();
+      });
+    }
+
+    function point(e) {
+      const rect = canvas.getBoundingClientRect();
+      return [(e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height];
+    }
+
+    canvas.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      canvas.setPointerCapture(e.pointerId);
+      current = [point(e)];
+      strokes.push(current);
+      redraw();
+    });
+    canvas.addEventListener("pointermove", (e) => {
+      if (!current) return;
+      (e.getCoalescedEvents ? e.getCoalescedEvents() : [e]).forEach((ev) => current.push(point(ev)));
+      redraw();
+    });
+    const end = () => { current = null; };
+    canvas.addEventListener("pointerup", end);
+    canvas.addEventListener("pointercancel", end);
+
+    function open() {
+      box.hidden = false;
+      size();
+      box.scrollIntoView({ block: "nearest" });
+      announce("Writing pad open. Write with your finger or a pen, then tap Use.");
+    }
+
+    function close() {
+      box.hidden = true;
+      strokes = [];
+      current = null;
+    }
+
+    function use() {
+      if (!strokes.length) { announce("The pad is empty. Write something first."); return; }
+      const out = document.createElement("canvas");
+      out.width = canvas.width;
+      out.height = canvas.height;
+      redraw(out.getContext("2d"));
+      out.toBlob((blob) => {
+        const file = new File([blob], "handwriting.png", { type: "image/png" });
+        restorePhoto(file, true);
+        close();
+        announce("Your writing is attached. Tap send, or Check my answer.");
+        text.focus();
+      }, "image/png");
+    }
+
+    document.getElementById("pad-undo").addEventListener("click", () => { strokes.pop(); redraw(); });
+    document.getElementById("pad-clear").addEventListener("click", () => { strokes = []; redraw(); });
+    document.getElementById("pad-cancel").addEventListener("click", close);
+    document.getElementById("pad-use").addEventListener("click", use);
+    window.addEventListener("resize", () => { if (!box.hidden) size(); });
+    return { open: open };
+  })();
+
   function practiceResult(number, verdict) {
     const item = practiceBox.querySelector('[data-number="' + number + '"]');
     if (!item) return;
@@ -345,6 +436,7 @@
     data.append("intent", intent);
     data.append("text", message);
     if (practice) data.append("practice", "1");
+    if (options && options.handwriting) data.append("handwriting", "1");
     const imageUrl = file ? URL.createObjectURL(file) : null;
     if (message) turn("student", (intent === "check" && !practice ? "My answer: " : "") + message, imageUrl ? { image: imageUrl } : null);
     else if (file) turn("student", "", { image: imageUrl });
@@ -398,6 +490,9 @@
           } else if (ev.type === "practice") {
             turn("tutor", "Here are 3 to try. Answer them below — I’ll check each one.");
             renderPractice(ev.exercises);
+          } else if (ev.type === "reading") {
+            const p = turn("tutor", "I read your writing as:\n" + ev.text);
+            p.classList.add("ot-reading");
           } else if (ev.type === "notice") {
             notice(ev.message);
           } else if (ev.type === "error") {
@@ -439,11 +534,12 @@
     if (busyNow || (!message && !photo)) return;
     const intent = checking ? "check" : "ask";
     const file = photo ? photo.file : null;
+    const options = photo && photo.handwriting ? { handwriting: true } : undefined;
     text.value = "";
     updateCount();
     setChecking(false);
     clearPhoto();
-    send(intent, message, file);
+    send(intent, message, file, options);
   }
 
   form.addEventListener("submit", (e) => { e.preventDefault(); if (!busyNow) submit(); });
@@ -454,6 +550,7 @@
   imageInput.addEventListener("change", () => choosePhoto(imageInput));
   cameraInput.addEventListener("change", () => choosePhoto(cameraInput));
   document.getElementById("photo-remove").addEventListener("click", () => { clearPhoto(); announce("Photo removed."); });
+  document.querySelectorAll("[data-open-pad]").forEach((b) => b.addEventListener("click", () => { if (!busyNow) pad.open(); }));
   document.querySelectorAll("[data-pick]").forEach((b) => b.addEventListener("click", () => document.getElementById(b.dataset.pick).click()));
   document.getElementById("check-cancel").addEventListener("click", () => { setChecking(false); text.focus(); });
   document.querySelectorAll("[data-example]").forEach((b) => b.addEventListener("click", () => send("ask", b.dataset.example, null)));

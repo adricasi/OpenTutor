@@ -60,6 +60,10 @@ phones (any browser) ──hub Wi-Fi, no internet──▶ laptop: OpenTutor web
 - **Fair queue:** students see their place in line when the tutor is busy.
 - **Design:** the student and teacher screens follow the team prototype in `prototype/`
   (served as plain pages: no framework, nothing loaded from the internet).
+- **Write by hand:** the ✍️ button opens a writing pad (finger, stylus or Apple Pencil). A
+  handwritten question is read like a photo; a handwritten answer is read into text, shown to
+  the student ("I read your writing as: …") and then checked, by the maths checker for Maths.
+  This brings the iPad tutor's read → check → explain loop to every phone and tablet.
 - **Read aloud:** each tutor reply has a 🔊 button that uses the phone's own on-device voice
   (hidden if the phone has none), so students who find reading hard can listen.
 
@@ -183,7 +187,7 @@ How the two fit together ([ADR-0008](docs/adr/0008-integrate-ipad-tutor-as-a-com
 uv sync
 uv run opentutor start --dev             # fake model, http://127.0.0.1:8000
 uv run pytest --cov                      # tests (no network, no model needed)
-RUN_E2E=1 uv run pytest tests/test_read_aloud.py   # browser tests (node + Playwright)
+RUN_E2E=1 uv run pytest tests/test_read_aloud.py tests/test_handwriting_e2e.py   # browser tests (node + Playwright)
 uv run ruff check --fix . && uv run ruff format .   # lint + format
 uv run mypy src                          # type check
 uv run pip-audit                         # dependency vulnerabilities

@@ -294,6 +294,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         intent: Annotated[str, Form()] = "ask",
         text: Annotated[str, Form()] = "",
         practice: Annotated[str, Form()] = "",
+        handwriting: Annotated[str, Form()] = "",
         image: UploadFile | None = None,
     ) -> Response:
         session = current(request)
@@ -332,6 +333,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             photo,
             now,
             practice == "1",
+            handwriting == "1",
         )
         return StreamingResponse(stream, media_type="application/x-ndjson")
 
@@ -378,6 +380,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         photo: bytes | None,
         accepted_at: float,
         practice_answers: bool,
+        handwriting: bool,
     ) -> AsyncIterator[bytes]:
         convo = session.conversation
         if convo is None:
@@ -405,7 +408,9 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             record["queue_s"] = round(time.monotonic() - start, 2)
             try:
                 yield _line({"type": "started"})
-                events = tutoring.handle(tutor, convo, intent, text, photo, practice_answers)
+                events = tutoring.handle(
+                    tutor, convo, intent, text, photo, practice_answers, handwriting
+                )
                 async for event in events:
                     if "first_token_s" not in record and event["type"] == "token":
                         record["first_token_s"] = round(time.monotonic() - start, 2)
