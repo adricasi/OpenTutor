@@ -78,7 +78,7 @@ To run a real hub with Gemma 4 on a laptop and a hotspot, follow the [operator g
 ## Hackathon submission
 We are entering **Best Use of Gemma 4** and **Best Open-Source AI Project**. The organisers' "minimum standard" for the repo and the README is listed below; this section says where each item is met. The same table, with file-level evidence, is in [docs/hackathon/CHECKLIST.md](docs/hackathon/CHECKLIST.md).
 
-**Demo video:** _link to be added once it is on YouTube._ Demo script: [docs/demo.md](docs/demo.md).
+**Demo video:** [youtu.be/syDQ9Jdgxro](https://youtu.be/syDQ9Jdgxro). Demo script: [docs/demo.md](docs/demo.md).
 
 ### In the repo
 | Required | Status | Where |
