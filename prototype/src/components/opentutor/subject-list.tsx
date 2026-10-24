@@ -1,0 +1,13 @@
+import { Link } from '@tanstack/react-router';
+import { ArrowUpRight, Calculator, FlaskConical, Languages, ShieldCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { tutors, type TutorId } from '@/lib/opentutor';
+import { useSession } from './session';
+import learningImage from '@/assets/learning.jpg';
+
+const icons = { maths: Calculator, english: Languages, science: FlaskConical };
+export function SubjectList() {
+  const { nickname, enabled } = useSession();
+  if (!nickname) return <div className="ot-access"><ShieldCheck size={35} /><h1>A nickname is all you need.</h1><Button asChild><Link to="/">Join the hub <ArrowUpRight /></Link></Button></div>;
+  return <><div className="ot-page-kicker"><span className="ot-star">✳</span> YOUR NEXT LIGHTBULB MOMENT</div><div className="ot-title-row"><div><h1>Hey, {nickname}.<br /><span className="ot-muted-title">What’s your question?</span></h1><p>Pick a subject. Bring a question. We’ll figure it out together.</p></div><span className="ot-open-label">OPEN MINDS<br />WELCOME HERE ↙</span></div><div className="ot-section-title"><h2>Your tutors</h2><span>01 — CHOOSE A SUBJECT</span></div><div className="ot-subjects">{enabled.map((id: TutorId, i) => { const Icon = icons[id]; const tutor = tutors[id]; return <Button variant="ghost" asChild key={id} className={`ot-subject ${id}`}><Link to="/chat/$tutor" params={{ tutor: id }}><div className="ot-subject-top"><Icon /><span>0{i + 1}</span></div><h2>{tutor.name}<span>↗</span></h2><p>{tutor.description}</p><div className="ot-subject-foot"><span>Let’s work it out</span><span>{tutor.short}</span></div></Link></Button>; })}</div>{!enabled.length && <p>No tutors are enabled. Open Hub to switch one on.</p>}<div className="ot-discover"><div><div className="ot-section-title"><h2>A little inspiration</h2><span>02 — TRY A QUESTION</span></div>{enabled.map(id => <Button variant="ghost" asChild className="ot-example" key={id}><Link to="/chat/$tutor" params={{ tutor: id }} search={{ example: true }}><span className={`ot-topic-dot ${id}`} /><span>{tutors[id].example}</span><ArrowUpRight size={17} /></Link></Button>)}</div><div className="ot-learning-art"><img src={learningImage} alt="A notebook, a pencil and colourful geometric shapes" width={1152} height={576} /><div><span className="ot-page-kicker">PROGRESS, NOT PERFECTION</span><p>You don’t have to<br />know it all. <span>Yet.</span></p></div></div></div></>;
+}
