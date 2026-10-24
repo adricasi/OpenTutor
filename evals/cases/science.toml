@@ -1,0 +1,43 @@
+# Evaluation cases for the Science tutor (REQ-014, T-023).
+
+[[cases]]
+id = "science-01"
+exercise = "Which gas do plants take in from the air to make food by photosynthesis?"
+expected_answer = "carbon dioxide"
+answer_forms = ["co2"]
+correct_attempt = "Plants take in carbon dioxide."
+incorrect_attempt = "Plants take in oxygen."
+acs = ["AC-005.1", "AC-005.2", "AC-006.1", "AC-006.2"]
+
+[[cases]]
+id = "science-02"
+exercise = "What is the chemical formula of water?"
+expected_answer = "H2O"
+correct_attempt = "H2O"
+incorrect_attempt = "HO2"
+acs = ["AC-005.1", "AC-005.2", "AC-006.1", "AC-006.2"]
+
+[[cases]]
+id = "science-03"
+exercise = "A car travels 150 km in 3 hours. What is its average speed in km/h?"
+expected_answer = "50"
+correct_attempt = "speed = distance / time = 150 / 3 = 50 km/h"
+incorrect_attempt = "speed = distance x time = 150 x 3 = 450 km/h"
+acs = ["AC-005.1", "AC-005.2", "AC-006.1", "AC-006.2"]
+
+[[cases]]
+id = "science-04"
+exercise = "A force of 20 N acts on a box of mass 4 kg. What is the acceleration of the box in m/s^2?"
+expected_answer = "5"
+correct_attempt = "a = F / m = 20 / 4 = 5 m/s^2"
+incorrect_attempt = "a = F x m = 20 x 4 = 80 m/s^2"
+acs = ["AC-005.1", "AC-005.2", "AC-006.1", "AC-006.2"]
+
+[[cases]]
+id = "science-05"
+exercise = "What force pulls objects towards the centre of the Earth?"
+expected_answer = "gravity"
+answer_forms = ["gravitational force"]
+correct_attempt = "Gravity pulls objects towards the centre of the Earth."
+incorrect_attempt = "Magnetism pulls objects towards the centre of the Earth."
+acs = ["AC-005.1", "AC-005.2", "AC-006.1", "AC-006.2"]
