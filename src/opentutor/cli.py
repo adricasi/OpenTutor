@@ -81,7 +81,11 @@ def main(argv: list[str] | None = None) -> int:
     segno.make(url, error="m").terminal(compact=True, border=2)
     print(f"\n  OpenTutor is ready. Students: join the hub Wi-Fi and open {url}")
     print(f"  Model: {settings.model if settings.model_backend == 'ollama' else 'fake (dev)'}\n")
-    serve(create_app(settings), settings.host, settings.port)
+    app = create_app(settings)
+    print(
+        f"  Teacher view: http://127.0.0.1:{settings.port}/teacher  PIN {app.state.teacher.pin}\n"
+    )
+    serve(app, settings.host, settings.port)
     return 0
 
 

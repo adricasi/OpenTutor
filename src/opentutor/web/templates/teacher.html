@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Teacher view · OpenTutor{% endblock %}
+{% block main %}
+<h1>Teacher view</h1>
+{% if not authorised %}
+<form method="post" action="/teacher/login" class="card">
+  <label for="pin">Teacher PIN (shown on the hub laptop's screen)</label>
+  <input id="pin" name="pin" inputmode="numeric" maxlength="6" autocomplete="off" required>
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  <button type="submit">Open</button>
+</form>
+{% else %}
+<p class="help">Totals since the hub started. No messages, photos or nicknames are kept.</p>
+{% for tutor in tutors %}{% set stats = insights.by_tutor.get(tutor.id) %}
+<section class="card">
+  <h2>{{ tutor.config.name }}</h2>
+  {% if not stats %}<p class="help">No questions yet.</p>{% else %}
+  <p>Hints asked: {{ stats.hints }} · Answers checked: correct {{ stats.verdicts['correct'] }}, partly {{ stats.verdicts['partly_correct'] }}, not yet {{ stats.verdicts['not_yet_correct'] }}</p>
+  <h3>Topics asked about</h3>
+  <ul>{% for topic, count in stats.topics.most_common() %}<li>{{ topic }}: {{ count }}</li>{% endfor %}</ul>
+  {% if stats.struggles %}<h3>Where students struggled most</h3>
+  <ul>{% for topic, count in stats.struggles.most_common(3) %}<li>{{ topic }}: {{ count }} "not yet correct"</li>{% endfor %}</ul>{% endif %}
+  {% endif %}
+</section>
+{% endfor %}
+{% endif %}
+{% endblock %}
