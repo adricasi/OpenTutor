@@ -44,7 +44,9 @@ SECURITY_HEADERS = {
         "form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
     ),
     "x-content-type-options": "nosniff",
-    "referrer-policy": "no-referrer",
+    # same-origin, not no-referrer: with no-referrer Chrome sends "Origin: null" on form posts,
+    # which the Origin check below would refuse.
+    "referrer-policy": "same-origin",
     "cache-control": "no-store",
 }
 
