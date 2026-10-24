@@ -8,3 +8,5 @@ apps/web/dist/
 .DS_Store
 fixtures/videos/*
 !fixtures/videos/.gitkeep
+# the repository root ignores every models/ folder; keep the manifest and downloader (weights stay ignored above)
+!models/
