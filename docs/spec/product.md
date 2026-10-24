@@ -96,6 +96,7 @@ Wi-Fi, with zero mobile data and nothing to install.
 - [x] Q-2: Hub laptop operating system → Linux.
 - [ ] Q-3: Exact Ollama tags and sizes for Gemma 4 E2B/E4B (research sources disagree); verify on the official Ollama library.
 - [ ] Q-4: Which subjects beyond Maths, English language and Science, if any, for this version?
+- [ ] Q-5: Gemma 4 license terms and any terms operators must accept — check the official model card and record them in the README.
 
 ## Assumptions
 <!-- Anything decided without confirmation. Mark in text as [ASSUMPTION A-n]. -->
