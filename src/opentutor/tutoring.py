@@ -77,8 +77,14 @@ def system_prompt(core: str, tutor: Tutor) -> str:
     return "\n\n".join(parts)
 
 
+_SPOOFED = re.compile(r"</?\s*student\s*>|\[\s*hub instruction\s*\]", re.IGNORECASE)
+
+
 def student_block(text: str) -> str:
-    return f"<student>\n{text}\n</student>"
+    """Wrap student (or photo) text; tags or hub markers inside it are neutralised so a
+    student can't close the block or fake a hub instruction (REQ-010)."""
+    safe = _SPOOFED.sub(lambda m: "(" + m.group(0).strip("<>[]/ ") + ")", text)
+    return f"<student>\n{safe}\n</student>"
 
 
 class Tutoring:
