@@ -145,7 +145,7 @@
           if (ev.type === "queued") status.textContent = "You're number " + ev.position + " in line…";
           else if (ev.type === "started") status.textContent = "Thinking…";
           else if (ev.type === "token") { if (!reply) { reply = bubble("tutor"); status.textContent = ""; } reply.textContent += ev.text; }
-          else if (ev.type === "verdict") bubble("tutor", [VERDICTS[ev.verdict], ev.explanation, ev.first_error_step ? "First step to fix: " + ev.first_error_step : "", ev.hint ? "Hint: " + ev.hint : ""].filter(Boolean).join("\n"));
+          else if (ev.type === "verdict") bubble("tutor", [(ev.practice_number ? "Exercise " + ev.practice_number + ": " : "") + VERDICTS[ev.verdict], ev.explanation, ev.first_error_step ? "First step to fix: " + ev.first_error_step : "", ev.hint ? "Hint: " + ev.hint : ""].filter(Boolean).join("\n"));
           else if (ev.type === "practice") bubble("tutor", "Try these:\n" + ev.exercises.map((x) => x.number + ". " + x.text).join("\n"));
           else if (ev.type === "notice") bubble("notice", ev.message);
           else if (ev.type === "error") bubble("notice", ev.message);

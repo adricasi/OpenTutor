@@ -1,4 +1,5 @@
 import json
+import time
 
 from fastapi.testclient import TestClient
 from starlette.formparsers import MultiPartParser
@@ -110,17 +111,23 @@ def test_ac_004_6_uploads_stay_in_memory(settings: Settings) -> None:
     assert MultiPartParser.spool_max_size > settings.max_upload_bytes
 
 
+def last_reply_request(fake: FakeModel) -> str:
+    """The last tutoring request (background topic classification calls are skipped)."""
+    calls = [c for c in fake.calls if "[Hub instruction]" in str(c[-1]["content"])]
+    return str(calls[-1][-1]["content"])
+
+
 def test_ac_005_2_hint_ladder_levels(client: TestClient, fake: FakeModel) -> None:
     join(client)
     send(client, text="Solve 2x + 3 = 11")
-    assert "hint level 1" in fake.calls[-1][-1]["content"]
+    assert "hint level 1" in last_reply_request(fake)
     send(client, intent="hint")
-    assert "hint level 2" in fake.calls[-1][-1]["content"]
+    assert "hint level 2" in last_reply_request(fake)
     send(client, intent="hint")
     send(client, intent="hint")
-    assert "hint level 3" in fake.calls[-1][-1]["content"]
+    assert "hint level 3" in last_reply_request(fake)
     got = events(send(client, intent="answer"))
-    assert "hint level 4" in fake.calls[-1][-1]["content"]
+    assert "hint level 4" in last_reply_request(fake)
     assert any(e.get("code") == "mistakes_reminder" for e in got)
 
 
@@ -209,3 +216,38 @@ def test_browser_form_post_with_same_origin_is_accepted(client: TestClient) -> N
         "/session", data={"nickname": "Ana"}, headers={"origin": "http://hub.test"}
     )
     assert response.status_code == 200
+
+
+def test_ac_007_2_each_practice_answer_checked_separately(
+    client: TestClient, fake: FakeModel
+) -> None:
+    join(client)
+    send(client, text="Solve 2x + 3 = 11")
+    fake.structured_replies["PracticeSet"] = [
+        json.dumps(
+            {"exercises": [{"number": i, "text": f"Solve x + {i} = {i + 5}"} for i in (1, 2, 3)]}
+        )
+    ]
+    send(client, intent="practice")
+    explain = json.dumps({"verdict": "correct", "explanation": "Well done."})
+    fake.structured_replies["Verdict"] = [explain, explain]
+    got = events(send(client, intent="check", text="1. x = 5\n3. x = 4"))
+    verdicts = [e for e in got if e["type"] == "verdict"]
+    assert [v["practice_number"] for v in verdicts] == [1, 3]
+    assert verdicts[0]["verdict"] == "correct"  # x + 1 = 6 -> x = 5 (maths checker)
+    assert verdicts[1]["verdict"] == "not_yet_correct"  # x + 3 = 8 -> x = 5, not 4
+
+
+def test_ac_013_3_typed_exercise_topic_classified(settings: Settings, fake: FakeModel) -> None:
+    from opentutor.app import create_app
+
+    app = create_app(settings.model_copy(update={"teacher_from_network": True}), fake)
+    fake.structured_replies["TopicChoice"] = [json.dumps({"topic": "Equations"})]
+    with TestClient(app, base_url="http://hub.test") as client:  # runs background tasks
+        join(client)
+        send(client, text="Solve 2x + 3 = 11")
+        for _ in range(50):
+            if app.state.insights.by_tutor["maths"].topics:
+                break
+            time.sleep(0.02)
+    assert app.state.insights.by_tutor["maths"].topics == {"equations": 1}

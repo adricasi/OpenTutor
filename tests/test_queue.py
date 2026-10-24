@@ -36,3 +36,27 @@ async def test_ac_009_4_queue_timeout_removes_request() -> None:
     assert len(queue) == 0
     queue.release()
     assert queue.active == 0
+
+
+async def test_ac_009_5_waiting_request_leaves_when_session_ends() -> None:
+    from opentutor.queue import QueueCancelledError
+
+    queue = FairQueue(parallel=1, timeout_s=5, update_s=0.01)
+    async for _ in queue.wait_turn():
+        pass
+    ended = False
+    seen: list[int] = []
+
+    async def waiting() -> None:
+        async for position in queue.wait_turn(lambda: ended):
+            seen.append(position)
+
+    task = asyncio.create_task(waiting())
+    await asyncio.sleep(0.03)
+    assert len(queue) == 1
+    ended = True
+    with pytest.raises(QueueCancelledError):
+        await task
+    assert len(queue) == 0
+    queue.release()
+    assert queue.active == 0

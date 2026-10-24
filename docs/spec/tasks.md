@@ -84,8 +84,8 @@ hint from local Gemma 4 — through CI.
 
 ## Milestone 2: Core tutoring
 
-- [~] T-006: Fair request queue and timeouts
-  - Status: Queue, positions, one in-flight request, timeouts done (#3); AC-009.5 (drop waiting requests when the session ends) not done.
+- [x] T-006: Fair request queue and timeouts
+  - Status: Done (#3, #12): AC-009.5 added — Finish or expiry removes the waiting request within one update.
   - Requirements: REQ-009, AC-003.3, NFR-004 (request isolation)
   - Depends on: T-005
   - Scope: FIFO queue with N workers, `queued` events, one in-flight request per
@@ -132,8 +132,8 @@ hint from local Gemma 4 — through CI.
     `__import__`, attribute access, huge exponents) that are rejected or time out without
     running code.
 
-- [~] T-011: Practice sets
-  - Status: Practice sets done (#3); AC-007.2 (check each practice answer separately) not done.
+- [x] T-011: Practice sets
+  - Status: Done (#3, #12): numbered answers ("1. x = 5") are checked one by one, Maths through the checker.
   - Requirements: REQ-007
   - Depends on: T-009, T-010
   - Scope: `PracticeSet` schema (exactly 3), generation with one retry, per-exercise
@@ -163,7 +163,7 @@ hint from local Gemma 4 — through CI.
 ## Milestone 3: Operations, quality and hackathon release
 
 - [~] T-013: Setup and start commands, operator guide
-  - Status: setup/start, digest pin, hotspot+loopback serving, operator README done (#3, #4); AC-012.5 (no network interface) and the warm-up request not done.
+  - Status: setup/start, digest pin, hotspot+loopback serving, operator README (#3, #4), AC-012.5 fallback, model and checker warm-up, model kept loaded (#12); left: tests for the printed QR/health messages and a run on the hub.
   - Requirements: REQ-012, NFR-001, NFR-007
   - Depends on: T-005
   - Scope: `opentutor setup` (deps check, `ollama pull`, digest record), `opentutor start`
@@ -230,7 +230,7 @@ hint from local Gemma 4 — through CI.
 ## Milestone 4: Should / Could
 
 - [x] T-018: Teacher insights view
-  - Status: Done (#5); typed questions are counted under the topic "other" until topic classification is added.
+  - Status: Done (#5); typed exercises get a topic from a background classification call (#12).
   - Requirements: REQ-013
   - Depends on: T-009
   - Done when: tests for AC-013.1 … AC-013.5 pass.

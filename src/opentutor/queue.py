@@ -5,11 +5,15 @@ from __future__ import annotations
 import asyncio
 import time
 from collections import deque
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 
 
 class QueueTimeoutError(Exception):
     pass
+
+
+class QueueCancelledError(Exception):
+    """The student left (Finish or expiry) while waiting (AC-009.5)."""
 
 
 class FairQueue:
@@ -21,7 +25,7 @@ class FairQueue:
     def __len__(self) -> int:
         return len(self._waiting)
 
-    async def wait_turn(self) -> AsyncIterator[int]:
+    async def wait_turn(self, cancelled: Callable[[], bool] = lambda: False) -> AsyncIterator[int]:
         """Yield the queue position while waiting; return once a slot is held.
 
         The caller must call `release()` after a successful wait.
@@ -37,6 +41,8 @@ class FairQueue:
                 if ticket.done():  # handed a slot between two position updates
                     return
                 yield self._waiting.index(ticket) + 1
+                if cancelled():
+                    raise QueueCancelledError
                 remaining = self.timeout_s - (time.monotonic() - started)
                 if remaining <= 0:
                     raise QueueTimeoutError

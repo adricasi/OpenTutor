@@ -55,3 +55,10 @@ def test_write_config_keeps_other_settings(tmp_path: Path) -> None:
 def test_nfr_001_listens_on_hotspot_and_loopback_only() -> None:
     assert listen_addresses("10.42.0.1") == ["10.42.0.1", "127.0.0.1"]
     assert listen_addresses("127.0.0.1") == ["127.0.0.1"]
+
+
+def test_ac_012_5_missing_hotspot_address_detected() -> None:
+    from opentutor.serve import address_available
+
+    assert address_available("127.0.0.1")
+    assert not address_available("203.0.113.7")  # TEST-NET-3: never on this machine

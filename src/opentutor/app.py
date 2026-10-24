@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
 import time
 import uuid
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Coroutine
 from typing import Annotated, Any
 from urllib.parse import urlsplit
 
@@ -27,8 +28,8 @@ from .config import PACKAGE_DIR, Settings
 from .images import ImageRejectedError, prepare_image
 from .insights import Insights, TeacherGate
 from .model import FakeModel, ModelClient, ModelError, OllamaModel
-from .queue import FairQueue, QueueTimeoutError
-from .sessions import Conversation, JoinError, Session, SessionStore
+from .queue import FairQueue, QueueCancelledError, QueueTimeoutError
+from .sessions import Conversation, Exercise, JoinError, Session, SessionStore
 from .tunnel import TunnelGate, is_tunnel, new_token
 from .tutoring import Intent, Limits, Tutoring
 from .tutors import Tutor, load_tutors
@@ -66,7 +67,12 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         model = (
             FakeModel()
             if settings.model_backend == "fake"
-            else OllamaModel(settings.ollama_url, settings.model, settings.model_digest)
+            else OllamaModel(
+                settings.ollama_url,
+                settings.model,
+                settings.model_digest,
+                settings.model_keep_alive,
+            )
         )
     # Keep photo uploads in memory: Starlette spools file parts > 1 MB to a temp file on disk
     # by default, which would break AC-004.6 / NFR-002.
@@ -219,6 +225,28 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         stream = run_request(session, tutor, intent, text, photo)  # type: ignore[arg-type]
         return StreamingResponse(stream, media_type="application/x-ndjson")
 
+    background: set[asyncio.Task[None]] = set()
+
+    def track(coroutine: Coroutine[Any, Any, None]) -> None:
+        task = asyncio.create_task(coroutine)
+        background.add(task)  # keep a reference until it finishes
+        task.add_done_callback(background.discard)
+
+    async def classify_later(tutor: Tutor, exercise: Exercise) -> None:
+        """Topic for a typed exercise, after the student's reply, behind waiting students."""
+        topic = "other"
+        try:
+            async for _ in queue.wait_turn():
+                pass
+            try:
+                topic = await tutoring.classify_topic(tutor, exercise)
+                exercise.topic = topic
+            finally:
+                queue.release()
+        except (ModelError, TimeoutError, QueueTimeoutError) as error:
+            log.info(json.dumps({"background": "classify_topic", "error": type(error).__name__}))
+        insights.exercise(tutor.id, topic)
+
     async def run_request(
         session: Session, tutor: Tutor, intent: Intent, text: str, photo: bytes | None
     ) -> AsyncIterator[bytes]:
@@ -237,8 +265,11 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         exercise_before = convo.exercise
         try:
             try:
-                async for position in queue.wait_turn():
+                async for position in queue.wait_turn(lambda: session.ended):
                     yield _line({"type": "queued", "position": position})
+            except QueueCancelledError:
+                record["outcome"] = "session_ended"
+                return
             except QueueTimeoutError:
                 record["outcome"] = "queue_timeout"
                 yield _line(_error("queue_timeout", "The tutor is busy. Please try again.", True))
@@ -252,8 +283,12 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
                     if event["type"] == "verdict" and convo.exercise:
                         insights.verdict(tutor.id, convo.exercise.topic, event["verdict"])
                     yield _line(event)
-                if convo.exercise is not None and convo.exercise is not exercise_before:
-                    insights.exercise(tutor.id, convo.exercise.topic)
+                new_exercise = convo.exercise
+                if new_exercise is not None and new_exercise is not exercise_before:
+                    if new_exercise.image is None:
+                        track(classify_later(tutor, new_exercise))
+                    else:
+                        insights.exercise(tutor.id, new_exercise.topic)
                 if intent == "hint":
                     insights.hint(tutor.id)
                 yield _line({"type": "done"})

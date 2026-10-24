@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     model: str = "gemma4:e4b"
     model_digest: str = ""
     parallel_requests: int = 2
+    # Keep the model loaded between questions (Ollama unloads idle models after 5 min).
+    model_keep_alive: str = "8h"
 
     # Limits (requirements.md)
     max_sessions: int = 15
