@@ -12,8 +12,8 @@
     <a class="ot-brand" href="{{ '/subjects' if session else '/' }}"><span class="ot-logo">{{ icon("book-open", 23) }}</span>OpenTutor<span class="ot-brand-period">.</span></a>
     <span class="ot-rail-label">ONE HUB. MANY POSSIBILITIES.</span>
     <nav aria-label="Main">
-      <a class="ot-nav {{ 'selected' if section != 'Teacher' }}" href="{{ '/subjects' if session else '/' }}">{{ icon("grid-2x2", 19) }}<span class="ot-nav-label">Learn</span>{{ icon("arrow-up-right", 14) }}</a>
-      {% if show_teacher %}<a class="ot-nav {{ 'selected' if section == 'Teacher' }}" href="/teacher">{{ icon("graduation-cap", 19) }}<span class="ot-nav-label">Teacher</span>{{ icon("arrow-up-right", 14) }}</a>{% endif %}
+      <a class="ot-nav {{ 'selected' if section != 'Teacher' }}" href="{{ '/subjects' if session else '/' }}" aria-label="Learn">{{ icon("grid-2x2", 19) }}<span class="ot-nav-label">Learn</span>{{ icon("arrow-up-right", 14) }}</a>
+      {% if show_teacher %}<a class="ot-nav {{ 'selected' if section == 'Teacher' }}" href="/teacher" aria-label="Teacher">{{ icon("graduation-cap", 19) }}<span class="ot-nav-label">Teacher</span>{{ icon("arrow-up-right", 14) }}</a>{% endif %}
     </nav>
     <div class="ot-rail-statement" aria-hidden="true"><span>?</span><p>Great things<br>start with<br>a question.</p></div>
     <div class="ot-rail-footer"><span class="ot-live-dot"></span>{{ 'Online demo' if online_demo else 'Local hub' }}<p>Gemma 4 · on this laptop</p></div>
@@ -41,11 +41,11 @@
 {% if session %}
 <dialog class="ot-dialog" id="finish-dialog" aria-labelledby="finish-title">
   {{ icon("shield-check", 30) }}
-  <h2 id="finish-title">Call it a day?</h2>
+  <h2 id="finish-title">Finish for today?</h2>
   <p>Everything will be deleted. This cannot be undone.</p>
   <p>Your nickname, messages and photos disappear from the hub. Only anonymous classroom totals stay until the hub restarts.</p>
   <form method="post" action="/session/end" class="ot-dialog-actions">
-    <button class="btn btn-outline" type="button" data-close-finish>Keep learning</button>
+    <button class="btn btn-outline" type="button" data-close-dialog>Keep learning</button>
     <button class="btn" type="submit">Finish &amp; delete</button>
   </form>
 </dialog>

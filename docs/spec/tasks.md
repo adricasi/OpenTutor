@@ -205,7 +205,8 @@ hint from local Gemma 4 — through CI.
     results are recorded in `docs/spikes/` (or the release notes); `security-auditor`
     review has no open Blockers.
 
-- [ ] T-017: Accessibility, page weight and device test
+- [~] T-017: Accessibility, page weight and device test
+  - Status: axe-core (WCAG 2.2 AA) reports no violations on all screens at 360 px, no horizontal scroll, join page about 64–110 KB, after the `ux-reviewer` fixes (#16). Left: the axe and Playwright run as a CI job (needs workflow approval) and the manual Android and iOS test.
   - Requirements: NFR-010, NFR-005 (page weight)
   - Depends on: T-007, T-008
   - Scope: Playwright end-to-end test at 320/360 px with axe checks and an assertion that

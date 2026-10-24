@@ -166,7 +166,7 @@ def test_ac_006_4_check_fails_cleanly(client: TestClient, fake: FakeModel) -> No
     join(client)
     send(client, text="Solve 2x + 3 = 11")
     fake.structured_replies["Verdict"] = ["bad", "still bad"]
-    got = events(send(client, intent="check", text="x = 4"))
+    got = events(send(client, intent="check", text="I think it is four"))  # checker undecided
     assert any(e.get("code") == "check_failed" for e in got)
 
 
@@ -231,7 +231,10 @@ def test_ac_007_2_each_practice_answer_checked_separately(
     send(client, intent="practice")
     explain = json.dumps({"verdict": "correct", "explanation": "Well done."})
     fake.structured_replies["Verdict"] = [explain, explain]
-    got = events(send(client, intent="check", text="1. x = 5\n3. x = 4"))
+    response = client.post(
+        "/api/messages", data={"intent": "check", "text": "1. x = 5\n3. x = 4", "practice": "1"}
+    )
+    got = events(response)
     verdicts = [e for e in got if e["type"] == "verdict"]
     assert [v["practice_number"] for v in verdicts] == [1, 3]
     assert verdicts[0]["verdict"] == "correct"  # x + 1 = 6 -> x = 5 (maths checker)
@@ -258,3 +261,107 @@ def test_icons_are_single_closed_svgs(client: TestClient) -> None:
     assert html.count("<svg") == html.count("</svg>")
     assert "lucide" not in html  # only our own <svg class="icon"> wrapper, no nested copies
     assert "No account" in html.split("ot-join-promises")[1].split("</div>")[0]
+
+
+def test_stream_reports_real_state_for_the_page(client: TestClient) -> None:
+    join(client)
+    got = events(send(client, intent="hint"))  # no exercise yet: the hint level must not move
+    assert next(e for e in got if e["type"] == "state") == {
+        "type": "state",
+        "hint_level": 0,
+        "exercise": None,
+        "practice": 0,
+    }
+    got = events(send(client, text="Solve 2x + 3 = 11"))
+    state = next(e for e in got if e["type"] == "state")
+    assert state["hint_level"] == 1
+    assert state["exercise"] == "Solve 2x + 3 = 11"
+
+
+def test_maths_checker_verdict_shown_even_if_explanation_fails(
+    client: TestClient, fake: FakeModel
+) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    fake.structured_replies["Verdict"] = []  # the model can't explain
+    got = events(send(client, intent="check", text="x = 7"))
+    verdict = next(e for e in got if e["type"] == "verdict")
+    assert verdict["verdict"] == "not_yet_correct"
+
+
+def test_numbered_working_is_not_mistaken_for_practice_answers(
+    client: TestClient, fake: FakeModel
+) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    fake.structured_replies["PracticeSet"] = [
+        json.dumps({"exercises": [{"number": i, "text": f"x + {i} = {i + 5}"} for i in (1, 2, 3)]})
+    ]
+    send(client, intent="practice")
+    fake.structured_replies["Verdict"] = [json.dumps({"verdict": "correct", "explanation": "Yes."})]
+    got = events(send(client, intent="check", text="1. 2x = 8\n2. x = 4"))  # own working, no flag
+    verdicts = [e for e in got if e["type"] == "verdict"]
+    assert len(verdicts) == 1
+    assert "practice_number" not in verdicts[0]
+    assert verdicts[0]["verdict"] == "correct"  # checked against 2x + 3 = 11
+
+
+def test_practice_is_renumbered_one_to_three(client: TestClient, fake: FakeModel) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    fake.structured_replies["PracticeSet"] = [
+        json.dumps({"exercises": [{"number": n, "text": f"q{n}"} for n in (0, 4, 2)]})
+    ]
+    got = events(send(client, intent="practice"))
+    practice = next(e for e in got if e["type"] == "practice")["exercises"]
+    assert practice == [
+        {"number": 1, "text": "q0"},
+        {"number": 2, "text": "q2"},
+        {"number": 3, "text": "q4"},
+    ]
+
+
+def test_failed_hint_does_not_skip_a_ladder_step(settings: Settings, fake: FakeModel) -> None:
+    from opentutor.app import create_app
+
+    client = TestClient(
+        create_app(settings.model_copy(update={"first_output_timeout_s": 0.05}), fake)
+    )
+    join(client)
+    send(client, text="2x + 3 = 11")
+    fake.delay = 0.2  # the hint request times out
+    got = events(send(client, intent="hint"))
+    assert got[-1]["type"] == "error"
+    assert next(e for e in got if e["type"] == "state")["hint_level"] == 1
+
+
+def test_unreadable_photo_keeps_the_previous_exercise(client: TestClient, fake: FakeModel) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    fake.structured_replies["ExerciseAnalysis"] = [analysis(readable=False)]
+    got = events(send(client, image=photo_bytes()))
+    state = next(e for e in got if e["type"] == "state")
+    assert state["exercise"] == "2x + 3 = 11"
+    assert state["hint_level"] == 1
+
+
+def test_network_error_mid_reply_ends_stream_cleanly(settings: Settings) -> None:
+    import httpx
+
+    from opentutor.app import create_app
+    from opentutor.model import OllamaModel
+
+    class Broken(OllamaModel):
+        def __init__(self) -> None:
+            super().__init__("http://127.0.0.1:9", "gemma4:e4b")
+
+        async def stream(self, messages, max_tokens):  # type: ignore[no-untyped-def,override]  # noqa: ARG002
+            yield "Let"
+            raise httpx.ReadError("connection dropped")
+
+    client = TestClient(create_app(settings, Broken()), base_url="http://hub.test")
+    join(client)
+    got = events(send(client, text="hello"))
+    assert got[-1]["type"] == "error"
+    assert got[-1]["retryable"] is True
+    assert send(client, text="again").status_code == 200  # not stuck in flight

@@ -11,7 +11,7 @@
     <form method="post" action="/session" class="ot-join-form">
       <label for="nickname">What should we call you?</label>
       <div class="ot-field">
-        <input id="nickname" name="nickname" maxlength="20" autocomplete="off" required placeholder="Just a nickname…" value="{{ nickname or '' }}"
+        <input id="nickname" name="nickname" maxlength="20" autocomplete="off" autocapitalize="words" enterkeyhint="go" required{% if error %} autofocus aria-invalid="true"{% endif %} placeholder="Just a nickname…" value="{{ nickname or '' }}"
                aria-describedby="nickname-help{% if error %} nickname-error{% endif %}">
         <button class="btn" type="submit">Let’s begin {{ icon("arrow-up-right", 17) }}</button>
       </div>

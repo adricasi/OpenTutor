@@ -6,6 +6,7 @@ import asyncio
 from collections.abc import AsyncIterator
 from typing import Any, Protocol
 
+import httpx
 import ollama
 from pydantic import BaseModel
 
@@ -41,7 +42,7 @@ class OllamaModel:
                 options={"num_predict": 1},
                 keep_alive=self.keep_alive,
             )
-        except (ollama.ResponseError, ConnectionError, OSError) as error:
+        except (ollama.ResponseError, httpx.HTTPError, ConnectionError, OSError) as error:
             raise ModelError(str(error)) from error
 
     async def stream(self, messages: list[Message], max_tokens: int) -> AsyncIterator[str]:
@@ -56,7 +57,7 @@ class OllamaModel:
             async for part in parts:
                 if part.message.content:
                     yield part.message.content
-        except (ollama.ResponseError, ConnectionError, OSError) as error:
+        except (ollama.ResponseError, httpx.HTTPError, ConnectionError, OSError) as error:
             raise ModelError(str(error)) from error
 
     async def structured(
@@ -70,7 +71,7 @@ class OllamaModel:
                 options={"temperature": 0, "num_predict": max_tokens},
                 keep_alive=self.keep_alive,
             )
-        except (ollama.ResponseError, ConnectionError, OSError) as error:
+        except (ollama.ResponseError, httpx.HTTPError, ConnectionError, OSError) as error:
             raise ModelError(str(error)) from error
         return response.message.content or ""
 
@@ -78,7 +79,7 @@ class OllamaModel:
         """(ok, message): runtime reachable, model pulled, digest matches when configured."""
         try:
             listing = await self._client.list()
-        except (ollama.ResponseError, ConnectionError, OSError):
+        except (ollama.ResponseError, httpx.HTTPError, ConnectionError, OSError):
             return False, "Ollama is not running. Start it with: sudo systemctl start ollama"
         for entry in listing.models:
             if entry.model == self.model or entry.model == f"{self.model}:latest":
