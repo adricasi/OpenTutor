@@ -5,7 +5,7 @@
   at a time; a swap stops the old server before starting the new one (non-negotiables 3 and 8).
 - Memory guard: a model is only started if it fits in what macOS can hand out without swapping, plus
   headroom. A big MoE model that doesn't fit runs from its expert-offload store instead (experts paged
-  from the SSD, a bounded cache in RAM), slower but safe. Measured on the reference Mac (M3 Pro, 36 GB): see docs/MODELS.md.
+  from the SSD, a bounded cache in RAM), slower but safe. Measured on an M3 Pro, 36 GB: see docs/MODELS.md.
 """
 
 from __future__ import annotations

@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     # tier 1 (always local)
     tier1_enabled: bool = True
-    # load the reader on the first canvas ink instead of at startup: a server used only for voice/teacher doesn't need it, and without
+    # load the reader on the first canvas ink instead of at startup: the screen tutor doesn't need it, and without
     # its ~3.6 GB the tier-2 model fits fully resident (first step ~4x sooner than expert-offloaded)
     tier1_lazy: bool = True
     tier1_text_model: str = "tier1.text"  # manifest key
@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     # "keep page history after wipe": how much of the wiped work the tutor is given as prior work
     history_max_lines: int = 12
     history_max_chars: int = 1500
-    # screen tutor (the Mac screen tutor; not part of this folder): sent to the overlay helper in `screen.config`; it points, it never acts
+    # screen tutor (docs/SCREEN-TUTOR.md): sent to the overlay helper in `screen.config`; it points, it never acts
     screen_blocklist: str = Field("1Password,Bitwarden,Keychain Access", alias="SCREEN_BLOCKLIST")  # comma-separated
     allow_automation: bool = Field(False, alias="ALLOW_AUTOMATION")  # not built; keep false
 

@@ -120,8 +120,8 @@ describe("tutor text on the page", () => {
     expect(el.querySelector(".ghost-text .katex")).not.toBeNull();
   });
 
-  it("ghost ink on the canvas stays handwriting: delimiters stripped, no KaTeX in the SVG", () => {
-    const ghost: FeedbackEvent = { id: "fb_g", page_id: "p1", anchor: { line_id: "L1" }, type: "ghost", source: "tutor", text: "= $x^5/5$ + C" };
+  it("plain ghost ink on the canvas stays handwriting (LaTeX ghosts are typeset: pagemath.test.tsx)", () => {
+    const ghost: FeedbackEvent = { id: "fb_g", page_id: "p1", anchor: { line_id: "L1" }, type: "ghost", source: "tutor", text: "= x^5/5 + C" };
     const el = render(<TutorLayer page={{ id: "p1", index: 0, width: 800, height: 600 }} feedback={[ghost]} index={index} checking={[]} accepted={new Set()} onOpen={() => {}} />);
     const t = el.querySelector(".ghost text")!;
     expect(t.textContent).toBe("= x^5/5 + C");

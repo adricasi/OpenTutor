@@ -259,7 +259,7 @@ export interface FeedbackEvent {
   id: string;
   page_id: string;
   anchor: Anchor;
-  type: "mark" | "ghost" | "hint" | "question" | "speak" | "explain" | "summary" | "retract";
+  type: "mark" | "ghost" | "hint" | "question" | "speak" | "explain" | "summary" | "retract" | "formula";
   glyph?: ("check" | "cross" | "question" | "pin" | "underline" | "circle") | null;
   severity?: ("ok" | "minor" | "major") | null;
   text?: string | null;

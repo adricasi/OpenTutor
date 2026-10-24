@@ -10,3 +10,7 @@ __pycache__/
 uv.toml
 tutor-app/apps/web/.npmrc
 tutor-app/apps/web/tsconfig.tsbuildinfo
+# screen tutor: SwiftPM build output (tutor-app/apps/overlay) and screen fixtures (screenshots + AX data stay local)
+.build/
+ink-tutor/fixtures/screens/*
+!ink-tutor/fixtures/screens/.gitkeep

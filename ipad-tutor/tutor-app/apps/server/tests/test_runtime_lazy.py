@@ -1,4 +1,4 @@
-"""TIER1_LAZY: the tier-1 reader loads on the first canvas ink, not at startup (a server used only for voice/teacher doesn't need it)."""
+"""TIER1_LAZY: the tier-1 reader loads on the first canvas ink, not at startup (the screen tutor doesn't need it)."""
 
 import asyncio
 

@@ -1,0 +1,16 @@
+# Screen tutor (docs/SCREEN-TUTOR.md): the guide loop's knobs. Read by guide/config.py; rules live in code.
+# It points, it never acts: nothing here (or anywhere) clicks, types or scrolls for the user.
+recognizer = "none"
+capture_fps = 1.0            # sent to the helper in screen.config
+arrow_min_pt = 300           # draw an arrow from the pointer when the target is farther than this (points)
+pulse_idle_s = 8             # pulse the highlight after this long without a click or key
+verify_debounce_ms = 300     # done_when is evaluated this long after the newest AX snapshot
+vlm_min_interval_s = 2       # at most one VLM call (locate or yes/no) per this many seconds, and only on changed frames
+dhash_threshold = 4          # frames differ when their 64-bit dHashes differ in more than this many bits
+locate_give_up_s = 6         # after this long without finding the target, say so and suggest where to look
+max_steps = 15               # longer plans are cut (split the goal)
+max_speak_words = 15         # spoken step lines are cut to this
+ax_summary_max = 120         # elements the planner sees
+plan_image_max_px = 1024     # the frontmost-window screenshot sent to the planner, longer side
+replan_confirm_snapshots = 2 # a different frontmost app must show in this many snapshots in a row to replan
+ok_caption_ms = 1200         # the "✓" caption after a step is done

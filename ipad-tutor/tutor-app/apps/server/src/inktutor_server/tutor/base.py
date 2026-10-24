@@ -77,7 +77,7 @@ class SummaryContext:
 
 @dataclass
 class PlanContext:
-    """Screen tutor (the Mac screen tutor; not part of this folder): a goal → steps over the user's frontmost app. Local only."""
+    """Screen tutor (apps/overlay + screen/): a goal → steps over the user's frontmost app. Local only."""
 
     goal: str
     app: str

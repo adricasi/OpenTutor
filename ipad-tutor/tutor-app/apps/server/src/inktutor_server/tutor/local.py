@@ -123,7 +123,7 @@ def summary_user(ctx: SummaryContext) -> list[dict[str, Any]]:
     return [{"type": "text", "text": f"Learning log:\n{text}"}]
 
 
-# ---------------------------------------------------------------- screen tutor (the Mac screen tutor; not part of this folder)
+# ---------------------------------------------------------------- screen tutor (docs/SCREEN-TUTOR.md)
 def screen_system(kind: str, recipe: str = "") -> str:
     """prompts/screen.md `## rules` + `## <kind>`, then the app's recipe: stable per app, so the prefix is cached."""
     base = load_prompt("screen", kind)
@@ -249,7 +249,7 @@ class OpenAICompatible:
         return self._stream(system_prompt(ctx.mode, "hint", ctx.problem, ctx.rubric), hint_user(ctx), n)
 
     def converse(self, ctx: VoiceContext) -> AsyncIterator[dict[str, Any]]:
-        return self._stream(system_prompt(ctx.mode, "converse", ctx.problem, ctx.rubric), converse_user(ctx), 160)
+        return self._stream(system_prompt(ctx.mode, "converse", ctx.problem, ctx.rubric), converse_user(ctx), 200)
 
     def summarize(self, ctx: SummaryContext) -> AsyncIterator[dict[str, Any]]:
         return self._stream(summary_system(), summary_user(ctx), 260)
