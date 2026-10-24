@@ -296,6 +296,7 @@ Each acceptance criterion maps to at least one automated test named after its ID
 | D-10 | Read aloud in the browser with the Web Speech API (`speechSynthesis`), on-device voices only (`localService`); no server part | — (design detail) |
 | D-11 | iPad handwriting tutor integrated as a companion service, not merged | [docs/adr/0008-integrate-ipad-tutor-as-a-companion-service.md](../adr/0008-integrate-ipad-tutor-as-a-companion-service.md) |
 | D-12 | Handwriting in the hub (REQ-019): a canvas writing pad sends the writing as an image; for answer checks the model first reads it into text (structured `HandwritingReading`), the text is shown to the student and checked as a typed attempt, so the maths checker decides Maths verdicts — the read → check → explain loop of `ipad-tutor/` without its MLX pipeline | — (design detail) |
+| D-13 | Speaking (REQ-020) uses the browser's speech recognition (Web Speech API) where the page may use it, else the phone keyboard's voice typing; the hub never receives audio. On-hub speech-to-text (e.g. a local Whisper model) is the follow-up for a fully offline path | — (design detail) |
 
 ## Open questions and risks
 - Q-1 (product.md): GPU model/VRAM → sets the default model (E4B, E2B or 26B-A4B) and `OLLAMA_NUM_PARALLEL`; settled by T-001.

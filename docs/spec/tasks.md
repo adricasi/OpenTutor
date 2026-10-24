@@ -291,6 +291,17 @@ person). Everything else continues after the deadline.
   - Status: Built (#21): API tests and a browser test (draw, undo, use, check) pass with the
     fake model. Left: real Gemma 4 handwriting reading on the hub and a real-tablet test.
 
+- [~] T-028: Speak instead of typing; make Listen visible
+  - Requirements: REQ-020, AC-018.3 (changed)
+  - Depends on: T-005, T-025
+  - Scope: Speak control in the composer (Web Speech API with keyboard-dictation fallback),
+    first-use notice; Listen shown on every reply when speech synthesis exists
+  - Done when: browser tests with stubbed speech APIs pass for AC-020.1 … AC-020.5 and AC-018.3.
+  - Follow-up: on-hub speech-to-text so speaking works offline on every phone.
+  - Status: Built (#22): browser tests with stubbed speech APIs pass (speech fills the box,
+    blocked or missing recognition falls back to the keyboard microphone, Listen shown without an
+    offline voice and never uses an online one). Left: real phones.
+
 ## Coverage check
 | Requirement | Tasks |
 |---|---|
@@ -313,6 +324,7 @@ person). Everything else continues after the deadline.
 | REQ-017 | T-021 |
 | REQ-018 | T-025 |
 | REQ-019 | T-027 |
+| REQ-020 | T-028 |
 | NFR-001 | T-002, T-013, T-016 (pip-audit and gitleaks already run in CI) |
 | NFR-002 | T-007, T-016 |
 | NFR-003 | T-016 |

@@ -21,6 +21,7 @@
           <button class="btn btn-ghost" type="button" data-pick="camera">{{ icon("camera", 18) }}Take a photo</button>
           <button class="btn btn-ghost" type="button" data-pick="image">{{ icon("image-plus", 18) }}Choose a photo</button>
           <button class="btn btn-ghost" type="button" data-open-pad>{{ icon("pencil-line", 18) }}Write it by hand</button>
+          <button class="btn btn-ghost" type="button" data-speak>{{ icon("mic", 18) }}Say it out loud</button>
         </div>
       </div>
       {% endif %}
@@ -60,6 +61,7 @@
     <form id="ask" class="ot-composer" data-tutor="{{ tutor.id }}" data-nickname="{{ session.nickname }}" data-hint-level="{{ convo.hint_level }}"{% if autofill_example and tutor.config.examples %} data-autofill="{{ tutor.config.examples[0].student }}"{% endif %}>
       <button class="btn btn-ghost btn-icon" type="button" data-pick="image" aria-label="Add a photo" title="Add a photo">{{ icon("image-plus", 20) }}</button>
       <button class="btn btn-ghost btn-icon" type="button" data-open-pad aria-label="Write by hand" title="Write by hand">{{ icon("pencil-line", 20) }}</button>
+      <button class="btn btn-ghost btn-icon" type="button" data-speak id="speak" aria-label="Speak" title="Speak">{{ icon("mic", 20) }}</button>
       <label for="text" class="sr-only">Your question or answer</label>
       <textarea id="text" name="text" maxlength="2000" rows="2" placeholder="What are you working on?"></textarea>
       <button class="btn btn-icon" type="submit" aria-label="Send">{{ icon("arrow-up", 20) }}</button>

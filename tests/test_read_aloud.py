@@ -31,7 +31,11 @@ def hub_url() -> Iterator[str]:
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
-    app = create_app(Settings(model_backend="fake"), FakeModel(reply=REPLY))
+    # Every browser test joins from 127.0.0.1, so lift the per-device limits (AC-001.7).
+    settings = Settings(
+        model_backend="fake", max_sessions_per_address=50, join_attempts_per_minute=100
+    )
+    app = create_app(settings, FakeModel(reply=REPLY))
     server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error"))
     thread = threading.Thread(target=server.run, daemon=True)
     thread.start()
@@ -67,5 +71,7 @@ def test_ac_018_1_to_5_reads_with_on_device_voice(hub_url: str) -> None:
     assert result["postsDuringSpeech"] == 0  # AC-018.5
 
 
-def test_ac_018_3_hidden_without_on_device_voice(hub_url: str) -> None:
-    assert browser(hub_url, "none")["visible"] == 0
+def test_ac_018_3_shown_without_on_device_voice_but_never_uses_online_voice(hub_url: str) -> None:
+    result = browser(hub_url, "none")
+    assert result["visible"] >= 1
+    assert result["spoken"] == []  # the cloud voice is never used

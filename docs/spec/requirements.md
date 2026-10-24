@@ -211,7 +211,7 @@ configuration unless stated otherwise.
 - Acceptance criteria:
   - AC-018.1: WHEN the student's browser offers an English text-to-speech voice that runs on the device THE SYSTEM SHALL show a "Read aloud" control on each tutor reply, once the reply has finished arriving.
   - AC-018.2: WHEN the student taps "Read aloud" THE SYSTEM SHALL read that reply in English with an on-device voice and change the control to "Stop"; WHEN the student taps "Stop" or starts reading another reply THE SYSTEM SHALL stop the current reading.
-  - AC-018.3: IF the browser has no speech synthesis or no on-device English voice THEN THE SYSTEM SHALL not show the control (voices that need the internet are never used, so no reply text leaves the phone).
+  - AC-018.3: IF the browser has speech synthesis but no on-device English voice THEN THE SYSTEM SHALL still show the control and, when tapped, explain how to add an offline voice in the phone's settings; voices that need the internet are never used, so no reply text leaves the phone. IF the browser has no speech synthesis THEN THE SYSTEM SHALL not show the control.
   - AC-018.4: WHEN reading maths written in plain text THE SYSTEM SHALL say common notation in words (for example `x^2` as "x squared", `sqrt(9)` as "square root of 9", `*` as "times", `=` as "equals").
   - AC-018.5: WHEN reading aloud THE SYSTEM SHALL send nothing to the hub; the feature works with the hub unchanged.
 
@@ -225,6 +225,17 @@ configuration unless stated otherwise.
   - AC-019.3: WHEN the student checks an answer written by hand THE SYSTEM SHALL have the model read the handwriting as text, show the student what it read ("I read: …") before the verdict, and check that text as a typed attempt (REQ-006, including the maths checker for Maths).
   - AC-019.4: IF the handwriting can't be read THEN THE SYSTEM SHALL say so and suggest writing larger or typing the answer, without giving a verdict.
   - AC-019.5: WHEN handwriting is sent THE SYSTEM SHALL handle it like a photo: in memory only, never written to disk or logs (NFR-002).
+
+### REQ-020: Speak instead of typing
+- Story: As a student who finds typing or spelling hard, I want to say my question or answer out loud, so that I can ask for help in my own words.
+- Priority: Should
+- Goals: G-1
+- Acceptance criteria:
+  - AC-020.1: WHEN the chat page is shown THE SYSTEM SHALL show a "Speak" control next to the message box.
+  - AC-020.2: WHEN the student taps "Speak" and the browser allows speech recognition on this page THE SYSTEM SHALL listen in English, show that it is listening, put the recognised words into the message box as they come and stop when the student taps again or stops talking; the student checks the text before sending it.
+  - AC-020.3: IF the browser has no speech recognition, or it isn't allowed on this page (plain HTTP on the hub Wi-Fi, no microphone permission, no internet for an online service) THEN THE SYSTEM SHALL focus the message box and tell the student to use the microphone key on their phone's keyboard.
+  - AC-020.4: WHEN the student uses "Speak" for the first time in a session THE SYSTEM SHALL say that the phone's speech service turns their voice into text (on some phones that uses the internet) and that the hub never records their voice.
+  - AC-020.5: THE SYSTEM SHALL never send audio to the hub; only the text the student chooses to send.
 
 ## Non-functional requirements
 | ID | Category | Requirement (measurable) | Verification |
