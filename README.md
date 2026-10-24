@@ -86,7 +86,7 @@ We are entering **Best Use of Gemma 4** and **Best Open-Source AI Project**. The
 | An open-source LICENSE | Done | [LICENSE](LICENSE) (MIT) |
 | Keys only in `.env`, and `.env` in `.gitignore` | Done | No API keys are needed. `.env` and `.env.*` are git-ignored (only `.env.example` is tracked); gitleaks runs in [pre-commit](.pre-commit-config.yaml) and in CI. |
 | No real personal data in tests or examples | Done | Tests, evals and tutor examples use invented text; photos are kept in memory only. |
-| Pinned dependencies, no critical vulnerabilities | Partly | Versions are locked in `uv.lock`; `pip-audit` runs in CI. The result of a fresh `uv run pip-audit` is still to be added here. |
+| Pinned dependencies, no critical vulnerabilities | Done | Versions are locked in `uv.lock`; `pip-audit` runs in CI on every push and pull request. `uv run pip-audit` on 2026-10-24: no known vulnerabilities. |
 | A clear error when the model API fails, and a rate limit on a public demo | Done | [Errors, limits and disclaimer](#errors-limits-and-disclaimer) |
 | A disclaimer if you give legal, tax, medical or money advice | Done | OpenTutor gives homework help only; every page says "AI can make mistakes, check with your teacher". |
 

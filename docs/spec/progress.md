@@ -24,3 +24,13 @@ The latest entry is shown to Claude at the start of every session.
 - Next: on the hub laptop, T-001 (`opentutor setup`, check the Gemma 4 tag, time a photo
   question) and the manual runs that close T-005, T-007, T-012, T-021, T-023; then the demo
   video (T-022); then the deferred code-reviewer and security-auditor pass.
+
+## 2026-10-24 — Repository made public (done)
+- Done: public-release review (no secrets, personal data or internal hosts in tracked files
+  or history). With the repository public, GitHub Actions runners are available, so
+  `ci-python` and `security` run on every push to `main` and every pull request. Every
+  `ci-python` step passes locally: ruff format and lint, mypy, 207 tests, and `pip-audit`
+  (no known vulnerabilities). README and hackathon checklist updated with that result.
+- Issues: the earlier "GitHub CI can't run (private repo without runners)" note no longer
+  applies. Commit author emails in history are now public.
+- Next: unchanged from the entry above.
