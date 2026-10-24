@@ -116,6 +116,20 @@ def test_cli_start_refuses_unsafe_settings(capsys) -> None:  # type: ignore[no-u
     assert "all interfaces" in capsys.readouterr().err
 
 
+def test_ac_012_2_qr_code_prints_on_a_cp1252_console(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    import segno
+
+    from opentutor import cli
+
+    raw = io.BytesIO()
+    console = io.TextIOWrapper(raw, encoding="cp1252")
+    monkeypatch.setattr(cli.sys, "stdout", console)
+    cli.utf8_output()
+    segno.make("http://10.42.0.1:8000/", error="m").terminal(compact=True, border=2)
+    console.flush()
+    assert "█".encode() in raw.getvalue()
+
+
 def test_cli_setup_runs(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     from opentutor import cli
 
