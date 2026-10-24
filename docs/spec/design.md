@@ -1,6 +1,6 @@
 # Design: opentutor
 
-- Status: Draft <!-- Draft | In review | Approved -->
+- Status: In review <!-- Draft | In review | Approved -->
 - Last updated: 2026-10-24
 - Implements: requirements.md (REQ-*, NFR-*)
 
@@ -13,8 +13,10 @@ Students' phones join the hub Wi-Fi (laptop hotspot), scan the QR code printed a
 and use plain server-rendered pages. Each question goes through a fair in-memory queue to
 the model; the reply streams back to the phone as it is generated. Everything is held in
 memory and disappears at session end, after 30 minutes idle, or on restart. No call
-leaves the hub during operation; internet is only used once, during setup, to install
-dependencies and download the model.
+leaves the hub during operation in **hub mode** (the default); internet is only used
+once, during setup, to install dependencies, download the model and the pinned
+`cloudflared` binary. An opt-in **online demo mode** (REQ-017, ADR-0006) adds a Cloudflare
+quick tunnel for remote demos.
 
 ```mermaid
 flowchart LR
@@ -30,11 +32,14 @@ flowchart LR
       q[Request queue\nN workers]
       ins[Teacher insights]
     end
-    tut[(tutors/*.toml\nprompts/*.md)]
+    tut[(tutors/<id>/tutor.toml + rubric.md\nprompts/core.md)]
     ol[Ollama\n127.0.0.1:11434]
     model[(Gemma 4 E4B / E2B\npinned by digest)]
     log[(Rotating JSON log\nno content)]
+    chk[Maths checker\nsympy, worker process]
+    cfd[cloudflared\nonline demo only]
   end
+  cf((Cloudflare edge))
   p1 -- hub Wi-Fi, HTTP --> web
   t1 -- hub Wi-Fi, HTTP + PIN --> web
   web --> sess
@@ -43,6 +48,9 @@ flowchart LR
   web -. loads at start .-> tut
   q -- HTTP loopback --> ol --> model
   web --> log
+  web --> chk
+  cfd -. opt-in tunnel .-> cf
+  cfd -- 127.0.0.1 --> web
 ```
 
 ## Options considered
@@ -52,6 +60,8 @@ flowchart LR
 | Web stack | FastAPI + server-rendered pages · Streamlit · Gradio · Open WebUI | FastAPI + Jinja2 + vanilla JS, NDJSON streaming | [0003](../adr/0003-use-fastapi-with-server-rendered-pages.md) |
 | Model runtime | Ollama · llama.cpp server · vLLM | Ollama, Gemma 4 E4B default / E2B fallback, pinned by digest | [0004](../adr/0004-serve-gemma-4-through-ollama.md) |
 | State | In memory · SQLite · Redis | In memory, single process | [0005](../adr/0005-keep-session-state-in-memory.md) |
+| Remote demos | Tunnel as normal path · opt-in quick tunnel · named tunnel/ngrok · none | Opt-in, token-gated Cloudflare quick tunnel | [0006](../adr/0006-offer-an-optional-online-demo-link.md) |
+| Maths verdicts | Model only · symbolic checker decides · checker as second opinion | sympy checker decides when it can read the attempt | [0007](../adr/0007-let-a-symbolic-checker-decide-maths-verdicts.md) |
 
 ## Components
 | Component | Responsibility | Tech / local runtime | Requirements |
@@ -59,14 +69,16 @@ flowchart LR
 | Web app (HTTP layer) | Pages, JSON/NDJSON endpoints, cookies, input limits, security headers | FastAPI on Uvicorn, **1 worker**, bound to the hotspot IP and 127.0.0.1 | REQ-001…REQ-007, REQ-011, NFR-001 |
 | Pages and client script | Join, subject list, chat, teacher pages; camera/gallery input; client-side image downscale; streaming reader; quick actions; queue position | Jinja2 templates, one CSS file, one vanilla JS file; no framework, no CDN | REQ-001…REQ-007, REQ-009, NFR-003, NFR-005, NFR-010 |
 | Session store | Create/resume/delete sessions, nickname uniqueness, 15-session cap, 30-min idle expiry sweep | Python dict + asyncio task, in memory | REQ-001, REQ-011, NFR-002, NFR-006 |
-| Tutor registry | Load and validate `tutors/*.toml` at start; enabled list | `tomllib` (stdlib) + Pydantic models | REQ-002, REQ-008 |
-| Prompt builder | Assemble the core rules + subject tutor + conversation into model messages; isolate untrusted content; apply the context budget | Versioned files in `prompts/`; template function | REQ-005, REQ-010, AC-005.5 |
+| Tutor registry | Load and validate `tutors/<id>/tutor.toml` + `rubric.md` at start; enabled list | `tomllib` (stdlib) + Pydantic models with `extra="forbid"` | REQ-002, REQ-008 |
+| Prompt builder | Assemble the core rules + subject tutor + conversation into model messages; isolate untrusted content; apply the context budget | Versioned markdown files merged by `## section` (pattern from `tutor-ipad`'s `load_prompt`); core sections are locked; template function | REQ-005, REQ-010, AC-005.5 |
 | Tutoring service | Turn intents (ask, hint, answer, check, practice) into model calls; hint level; exercise analysis; structured output validation with one retry | Python, Pydantic schemas → JSON schema for Ollama `format` | REQ-004…REQ-007, REQ-015 |
 | Request queue | FIFO across all sessions; N parallel workers (N = Ollama parallel setting); positions; one in-flight request per session; 120-s queue timeout; 60-s model timeout | asyncio | REQ-009, AC-003.3, NFR-004 |
+| Maths checker | Parse plain-text Maths attempts, check step equivalence and equation solutions, return verdict + first wrong step or "can't tell" | sympy (adapted from `tutor-ipad` `checkers/math.py`), allow-list tokenizer, worker process, 2-s limit | AC-006.6 … AC-006.9, ADR-0007 |
 | Model client | Stream chat, structured calls, image input, health check, model/digest check | Official `ollama` Python client (async) over loopback HTTP [to confirm in T-001] | REQ-003…REQ-007, REQ-012 |
 | Image pipeline | Validate type/size, decode safely, strip metadata, downscale to the model's input size, keep bytes in memory | Pillow, with pixel-count limit | REQ-004, NFR-001, NFR-002 |
 | Teacher insights | Aggregate counters per tutor/topic; PIN check with lockout | In memory | REQ-013 |
-| Hub CLI | `setup` (deps + model pull + digest record), `start` (checks, bind, QR code, PIN, status line), `eval`, `bench` | Python console script; `segno` for the terminal QR code [dependency to confirm] | REQ-012, REQ-014, REQ-016 |
+| Hub CLI | `setup` (deps + model pull + digest record + pinned `cloudflared`), `start` (checks, bind, QR code, PIN, status line; `--online-demo`, `--new-token`), `eval`, `bench` | Python console script; typed settings with environment overrides (pydantic-settings, as in `tutor-ipad`); `segno` for QR codes (used by `tutor-ipad`) | REQ-012, REQ-014, REQ-016, REQ-017 |
+| Online demo tunnel *(opt-in)* | Run `cloudflared` quick tunnel, parse its URL, reopen if it drops; token gate middleware (token in QR → HttpOnly cookie); mark tunnel requests as remote | Adapted from `tutor-ipad` `pairing.py` (`QuickTunnel`, `TunnelGate`, `with_token`, `print_qr`), Linux binary added | REQ-017, ADR-0006 |
 | Model runtime | Serve Gemma 4 on loopback with N parallel requests | Ollama (system service), `OLLAMA_HOST=127.0.0.1:11434`, `OLLAMA_NUM_PARALLEL=N` | ADR-0004 |
 | Evaluation and benchmark | Evaluation set, safety set, scorers, latency/soak runner, report files | Python scripts under `evals/`, run against the real model on the hub | REQ-014, NFR-005, NFR-009, NFR-011 |
 
@@ -76,10 +88,11 @@ All entities live in memory only (ADR-0005). Nothing below is persisted.
 | Entity | Key fields | Lifetime | Classification |
 |---|---|---|---|
 | `Session` | `id` (32-byte random, URL-safe), `nickname`, `created_at`, `last_active`, `conversation`, `in_flight` | Until Finish, 30 min idle, or restart | Nickname: personal (low) |
-| `Conversation` | `tutor_id`, `exercise`, `turns[]`, `hint_level` (0–3), `practice` | Replaced on subject switch or new exercise | Confidential (minors' content) |
+| `Conversation` | `tutor_id`, `exercise`, `turns[]`, `hint_level` (0 none, 1 nudge, 2 hint, 3 next step, 4 full solution), `practice` | Replaced on subject switch or new exercise | Confidential (minors' content) |
 | `Exercise` | `text` (student text or text read from the image), `image` (downscaled bytes or none), `topic`, `exercise_count` | With its conversation | Confidential |
 | `Turn` | `role` (student/tutor), `intent`, `text`, `has_image`, `at` | With its conversation; oldest dropped first beyond the context budget, except the exercise | Confidential |
-| `TutorDefinition` | `id`, `name`, `description`, `enabled`, `instructions`, `examples[]`, `check_guidance`, `practice_guidance` | Loaded at start from `tutors/*.toml` | Public (repository) |
+| `TutorDefinition` | `id`, `name`, `description`, `enabled`, `checker` (`maths` or none), `examples[]`, rubric sections (`teaching`, `check`, `practice`) | Loaded at start from `tutors/<id>/` | Public (repository) |
+| `CheckResult` *(maths checker)* | `decided: bool`, `verdict` (when decided), `first_error_step` (index + text), `reason` | Used for one verdict | — |
 | `ExerciseAnalysis` *(model output)* | `readable: bool`, `exercise_count: int`, `exercise_text: str`, `topic: str`, `suggested_tutor_id: str or null` | Copied into `Exercise` | — |
 | `Verdict` *(model output)* | `verdict: correct / partly_correct / not_yet_correct`, `explanation`, `first_error_step` (nullable), `hint` (nullable) | Rendered, then kept as a turn | — |
 | `PracticeSet` *(model output)* | `exercises` (exactly 3 × `{number, text}`) | Until the next exercise | — |
@@ -114,20 +127,21 @@ not versioned). Non-stream errors use RFC 9457 problem JSON.
 **How intents map to model calls**
 | Intent | Trigger | Model call(s) |
 |---|---|---|
-| `new_exercise` | First message of a conversation, any message with a photo, or the "New exercise" action | 1) structured `ExerciseAnalysis` (unreadable → notice, AC-004.4; several → notice, AC-004.5; topic → insights; other tutor → notice, REQ-015). 2) streamed first hint (hint level 1). |
+| `new_exercise` | First message of a conversation, any message with a photo, or the "New exercise" action | 1) structured `ExerciseAnalysis` (unreadable → notice, AC-004.4; several → notice, AC-004.5; topic → insights; other tutor → notice, REQ-015). 2) streamed nudge (hint level 1). |
 | `ask` | Free-text follow-up | Streamed reply in context; hint-first rules apply |
-| `hint` | "Another hint" | Hint level + 1 (max 3), streamed |
-| `answer` | "Show the answer" | Streamed worked solution + mistakes reminder (AC-005.3) |
-| `check` | "Check my answer" with text or photo | Structured `Verdict`, then rendered; retry once on invalid output (AC-006.4) |
+| `hint` | "Another hint" | Hint level + 1 (max 3: nudge → hint naming the rule → correct next step), streamed |
+| `answer` | "Show the answer" | Hint level 4: streamed worked solution + mistakes reminder (AC-005.3) |
+| `check` | "Check my answer" with text or photo | Maths tutor with typed attempt: maths checker first; if it decides, the verdict is fixed and the model only writes the explanation (AC-006.8). Otherwise structured `Verdict` from the model; retry once on invalid output (AC-006.4) |
 | `practice` | "Practice" | Structured `PracticeSet` (exactly 3); retry once (AC-007.4) |
 
 Whether a message is a new exercise is decided by deterministic rules (table above), not
 by the model.
 
-**Subject tutor file** (`tutors/maths.toml`, validated at start):
-`id`, `name`, `description`, `enabled`, `instructions` (subject-specific teaching
-approach), `examples` (few-shot dialogues showing hint-first behaviour), `check_guidance`,
-`practice_guidance`. Core rules (hint-first, safety, simple English, plain-text maths
+**Subject tutor folder** (`tutors/maths/`, validated at start; pattern from
+`tutor-ipad/tutor-app/modes/`): `tutor.toml` with `id`, `name`, `description`, `enabled`,
+`checker` (optional, `"maths"`), `examples` (few-shot dialogues showing hint-first
+behaviour); `rubric.md` with `## teaching`, `## check` and `## practice` sections. Unknown
+fields are errors (AC-008.3). Core rules (hint-first, safety, simple English, plain-text maths
 notation such as `x^2` and `3/4` instead of LaTeX, untrusted-content handling) live in
 `prompts/core.md` and apply to every tutor; a tutor file can't override them.
 
@@ -139,7 +153,13 @@ notation such as `x^2` and `3/4` instead of LaTeX, untrusted-content handling) l
   unlocked by a 6-digit PIN printed only on the operator console, separate cookie.
 - Access control: a session can only read and write its own conversation; teacher
   insights need the teacher cookie; `/healthz` answers only on loopback; no operator
-  actions over HTTP.
+  actions over HTTP. A request is "local" only if it comes from loopback **and** carries
+  no Cloudflare headers (`cf-connecting-ip`, `cf-ray`) or `*.trycloudflare.com` host,
+  because tunnel traffic also arrives from 127.0.0.1 (AC-017.4).
+- Online demo mode (REQ-017): every tunnel request needs the access token (QR `?k=` →
+  HttpOnly `Secure` cookie, constant-time compare), adapted from `tutor-ipad`'s
+  `TunnelGate`; the token is stored in a git-ignored local file with mode 0600 and can be
+  rotated (`--new-token`).
 - Secrets: none in the repository. The teacher PIN and session secrets are generated at
   start, held in memory, never logged (the PIN is printed once on the console).
 - Network exposure:
@@ -174,7 +194,9 @@ notation such as `x^2` and `3/4` instead of LaTeX, untrusted-content handling) l
   | Malicious image (decompression bomb, parser bug) | 10 MB cap, Pillow pixel limit, re-encode, pinned/audited Pillow |
   | Teacher PIN brute force | 5 tries then 5-minute lockout |
   | Session hijack by sniffing on the hub Wi-Fi | WPA2 hotspot password; short-lived, content-only sessions; accepted residual risk |
-  | Tampered model or dependency | Model digest checked against config at start; `uv.lock`, `pip-audit`, gitleaks in CI |
+  | Tampered model or dependency | Model digest checked against config at start; `uv.lock`, `pip-audit`, gitleaks in CI; `cloudflared` pinned with SHA-256 |
+  | Code execution through the maths parser (`parse_expr` uses `eval`) | Allow-list tokenizer before parsing, length cap, worker process with 2-s limit, hostile-input tests (ADR-0007) |
+  | Strangers on the internet reaching the hub (online demo mode) | Opt-in only, access token, on-page notice, tunnel requests never treated as local |
 
 ## Reliability and operations
 - Failure modes and handling:
@@ -201,8 +223,8 @@ notation such as `x^2` and `3/4` instead of LaTeX, untrusted-content handling) l
 - Development machines: any OS; a **fake model backend** (`OPENTUTOR_MODEL_BACKEND=fake`,
   recorded responses) lets the UI and tests run without Ollama or a GPU.
 - Setup (with internet, once): install Ollama (official instructions, handed to the
-  operator) → `uv sync` → `opentutor setup` pulls the configured Gemma 4 tag and records
-  its digest → create the hotspot (`nmcli` steps in the README) → firewall rule.
+  operator) → `uv sync` → `opentutor setup` pulls the configured Gemma 4 tag, records
+  its digest and downloads the pinned `cloudflared` (for the optional demo link) → create the hotspot (`nmcli` steps in the README) → firewall rule.
   Offline copies (USB) of the model and wheels are documented as an alternative for slow
   venue internet.
 - Start (offline): `opentutor start` → checks (runtime, model digest, loopback binding,
@@ -215,12 +237,13 @@ notation such as `x^2` and `3/4` instead of LaTeX, untrusted-content handling) l
 ## Testing strategy
 | Level | Covers | Tools | Runs in CI |
 |---|---|---|---|
-| Unit | Nickname rules, session store and expiry, tutor loader/validation, prompt builder (isolation, context budget), queue ordering/timeouts, schema validation and retry, image pipeline, insights, log format | pytest, fake model client | Yes |
+| Unit | Maths checker (equivalence, first wrong step, equations, hostile inputs, timeout), nickname rules, session store and expiry, tutor loader/validation, prompt builder (isolation, context budget), queue ordering/timeouts, schema validation and retry, image pipeline, insights, log format | pytest, fake model client | Yes |
 | API / integration | Endpoints, cookies, status codes, NDJSON event sequences, limits, security headers, loopback-only health, teacher PIN lockout | pytest + FastAPI test client, fake model backend | Yes |
 | End-to-end UI | Join → subject → photo/text → hint → check → practice → finish at 360 px; no external requests; accessibility (axe) | Playwright (preinstalled Chromium), fake model backend | Yes |
 | Model evaluation | Hint-first compliance, check accuracy, reading level, safety refusals (NFR-009, NFR-011) | `opentutor eval` against real Ollama + Gemma 4 | No — on the hub; report attached to PRs that change prompts, tutors or the model |
 | Performance / soak | Time to first reply (1 and 5 students), 2-hour soak, memory (NFR-004…NFR-006) | `opentutor bench` | No — on the hub |
 | Offline / network | No outbound traffic; Ollama unreachable from a second device | Manual checklist with upstream disconnected + port scan | No — before release |
+| Online demo | Token gate (unit, with a fake `cloudflared` process as in `tutor-ipad`'s tests); streaming through a real tunnel | pytest; manual run | Gate: yes · real tunnel: no |
 
 Each acceptance criterion maps to at least one automated test named after its ID
 (e.g. `test_ac_001_4_duplicate_nickname`); model-quality ACs map to evaluation metrics.
@@ -237,15 +260,37 @@ Each acceptance criterion maps to at least one automated test named after its ID
 | D-2 | FastAPI + server-rendered pages + vanilla JS, NDJSON streaming | [docs/adr/0003-use-fastapi-with-server-rendered-pages.md](../adr/0003-use-fastapi-with-server-rendered-pages.md) |
 | D-3 | Gemma 4 via Ollama on loopback; E4B default, E2B fallback; pinned by digest | [docs/adr/0004-serve-gemma-4-through-ollama.md](../adr/0004-serve-gemma-4-through-ollama.md) |
 | D-4 | All state in memory, single web process | [docs/adr/0005-keep-session-state-in-memory.md](../adr/0005-keep-session-state-in-memory.md) |
-| D-5 | Subject tutors as TOML files; core rules in `prompts/core.md` that tutors can't override | — (design detail) |
+| D-5 | One folder per subject tutor (`tutor.toml` + `rubric.md`); core rules in `prompts/core.md` that tutors can't override | — (design detail) |
 | D-6 | "New exercise" decided by deterministic rules, not by the model | — (design detail) |
+| D-7 | Optional online demo link through a token-gated Cloudflare quick tunnel | [docs/adr/0006-offer-an-optional-online-demo-link.md](../adr/0006-offer-an-optional-online-demo-link.md) |
+| D-8 | sympy maths checker decides Maths verdicts when it can read the attempt | [docs/adr/0007-let-a-symbolic-checker-decide-maths-verdicts.md](../adr/0007-let-a-symbolic-checker-decide-maths-verdicts.md) |
+| D-9 | Four-level hint ladder (nudge, hint, next step, full solution on request), from `tutor-ipad`'s `shared.md` | — (design detail) |
 
 ## Open questions and risks
-- Q-1 (product.md): GPU model/VRAM → sets the default model and `OLLAMA_NUM_PARALLEL`; settled by T-001.
+- Q-1 (product.md): GPU model/VRAM → sets the default model (E4B, E2B or 26B-A4B) and `OLLAMA_NUM_PARALLEL`; settled by T-001.
 - Q-3 (product.md): Gemma 4 Ollama tags, sizes, image input size and JSON-schema support → verified in T-001.
 - Q-5: Gemma 4 license terms to record in the README (check the official model card).
 - Risk: an analysis call before the first hint may push photo latency past 15 s → T-001 measures it; fallback is to merge analysis into the streamed reply for text questions.
 - Risk: small-model accuracy on checking → evaluation set and targets (NFR-011); "check with your teacher" reminder.
+
+## Reuse from tutor-ipad
+`tutor-ipad/` is a separate product in this repository (Apple-silicon Mac, MLX runtime).
+Paths below are relative to `tutor-ipad/tutor-app/apps/server/src/inktutor_server/`.
+Copied code keeps a header comment naming its source file.
+
+| Source | Use in OpenTutor | Changes needed |
+|---|---|---|
+| `checkers/math.py` (`check_chain`, `equal`, `check_equations`) | Maths checker (ADR-0007) | Plain-text parser with allow-list tokenizer instead of LaTeX; worker process + timeout; drop integral/bracket specifics |
+| `pairing.py` (`QuickTunnel`, `TunnelGate`, `with_token`, `print_qr`, `qr_svg_data_uri`), `pair.py` | Online demo tunnel (ADR-0006), QR codes for REQ-012 | Linux `cloudflared` asset + checksum; `systemd-inhibit` instead of `caffeinate`; hotspot-interface address instead of `lan_ip()`; no Bonjour |
+| `tutor/base.py` `load_prompt` (section merge), `tutor/prompts/shared.md` (hint ladder) | Prompt builder, core rules, D-9 | Lock core sections; rewrite for photo/text homework instead of ink marks |
+| `modes.py` + `modes/<subject>/{config.toml, rubric.md}` | Subject tutor folders (REQ-008) | Pydantic validation, `enabled`/`name`/`description`, errors naming file and field |
+| `judge.py`, `tests/judge.md`, `tests/thresholds.toml`, `RUN_MODEL_TESTS` skip | Evaluation command (REQ-014) | Hint-first, verdict-accuracy, reading-level and safety scorers; p50/p90 and concurrency in the benchmark |
+| `config.py` (pydantic-settings) | Hub configuration | Linux defaults, no `.env` secrets |
+| `ink-tutor/models/manifest.toml` + `models/fetch.py` | Model pinning idea | Ollama tag + digest instead of Hugging Face revision |
+
+Not reused: the MLX runtime and memory checks (macOS-only), voice, ink agent and
+recognisers, SQLite store, cloud tutor providers, photo upload (it writes photos to disk,
+which AC-004.6 forbids).
 
 ## Traceability
 | Requirement | Design section(s) |
@@ -255,9 +300,9 @@ Each acceptance criterion maps to at least one automated test named after its ID
 | REQ-003 | Interfaces (`POST /api/messages`, stream events) · Reliability (model timeout) |
 | REQ-004 | Components (Image pipeline, Tutoring service) · Interfaces (intent `new_exercise`) · Security design |
 | REQ-005 | Components (Prompt builder, Tutoring service) · Interfaces (intents) · Data model (`hint_level`) |
-| REQ-006 | Data model (`Verdict`) · Interfaces (intent `check`) · Reliability (invalid output) |
+| REQ-006 | Data model (`Verdict`, `CheckResult`) · Components (Maths checker) · Interfaces (intent `check`) · Reliability (invalid output) · ADR-0007 |
 | REQ-007 | Data model (`PracticeSet`) · Interfaces (intent `practice`) |
-| REQ-008 | Components (Tutor registry) · Interfaces (subject tutor file) · D-5 |
+| REQ-008 | Components (Tutor registry) · Interfaces (subject tutor folder) · D-5 |
 | REQ-009 | Components (Request queue) · Interfaces (`queued` events, 409) |
 | REQ-010 | Components (Prompt builder) · Security design (threats) · Testing (model evaluation) |
 | REQ-011 | Components (Session store) · Data model (lifetimes) · ADR-0005 |
@@ -266,6 +311,7 @@ Each acceptance criterion maps to at least one automated test named after its ID
 | REQ-014 | Components (Evaluation and benchmark) · Testing strategy |
 | REQ-015 | Data model (`ExerciseAnalysis.suggested_tutor_id`) · Interfaces (`suggest_tutor` notice) |
 | REQ-016 | Components (Hub CLI status line) · Reliability (Ollama stops) |
+| REQ-017 | Components (Online demo tunnel, Hub CLI) · Security design (access control, threats) · ADR-0006 |
 | NFR-001 | Security design · Components (Web app, Model runtime) |
 | NFR-002 | Data model · Security design (Data protection) · ADR-0005 |
 | NFR-003 | Overview · Components (Pages) · Testing (Offline) |

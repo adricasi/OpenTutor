@@ -1,8 +1,9 @@
 # Product: opentutor
 
-- Status: Draft <!-- Draft | In review | Approved -->
+- Status: In review <!-- Draft | In review | Approved -->
 - Last updated: 2026-10-24
 - Input: [idea brief](../discovery/idea-brief.md) (verdict Go) · [research notes](../discovery/research-notes.md)
+- Related: `tutor-ipad/` in this repository is a **separate product** (iPad handwriting tutor on an Apple-silicon Mac). It is out of scope for this spec; OpenTutor borrows patterns and code from it where noted in [design.md](design.md#reuse-from-tutor-ipad).
 
 ## Problem
 Students from low-income families often have no home internet or prepaid data, share an
@@ -39,7 +40,7 @@ Wi-Fi, with zero mobile data and nothing to install.
 | Concurrent students served | 5 active students without errors; up to 15 connected | Load test with simulated phone clients |
 | Hint-first compliance | ≥ 95% of tutoring replies on the evaluation set don't reveal the final answer before the student asks | Evaluation set, ≥ 20 exercises per subject tutor |
 | Attempt-check accuracy | ≥ 90% correct "right / wrong" verdicts on the evaluation set (maths) | Evaluation set with known answers |
-| Offline operation | 0 outbound connections from the hub during a full session | Session run with upstream network disabled and outbound traffic monitored |
+| Offline operation | 0 outbound connections from the hub during a full session in hub mode (the default; the optional online demo link is excluded) | Session run with upstream network disabled and outbound traffic monitored |
 | Setup time | ≤ 30 min from a laptop with Ollama and the model already downloaded to students connected | Timed walkthrough of the README by someone outside the team |
 | Hackathon demo | Live end-to-end demo with internet off, public repo, README and demo video by the deadline | Submission checklist |
 
@@ -56,6 +57,8 @@ Wi-Fi, with zero mobile data and nothing to install.
 - Teacher view: aggregated topics and struggle points per subject, nickname-level only (Should).
 - Operator setup: README, setup script, model download, starting the hub, connecting phones.
 - Evaluation set and benchmark scripts that measure the metrics above.
+- Deterministic maths checking: a Maths attempt that can be parsed is checked by a symbolic checker, which decides the verdict; the model explains it.
+- Optional **online demo link** (off by default): a temporary public HTTPS link so judges or remote testers can try a hub over the internet (Could).
 - Open-source repository (MIT), demo video.
 
 ### Non-goals (explicitly out of scope)
@@ -68,6 +71,7 @@ Wi-Fi, with zero mobile data and nothing to install.
 - Hosting or integrating a content library (Kolibri, RACHEL) in this version.
 - Grading or assessment for school records.
 - Internet access for students through the hub.
+- The iPad handwriting canvas, voice and screen tutor of `tutor-ipad/` (separate product; possible future front end of the hub).
 
 ## Constraints
 - Deployment target: **Local / on-device** — one hub laptop runs the model and the web app; students' phones connect over the hub's local Wi-Fi (laptop hotspot or a local router); no cloud backend.
@@ -96,7 +100,7 @@ Wi-Fi, with zero mobile data and nothing to install.
 - [x] Q-2: Hub laptop operating system → Linux.
 - [ ] Q-3: Exact Ollama tags and sizes for Gemma 4 E2B/E4B (research sources disagree); verify on the official Ollama library.
 - [ ] Q-4: Which subjects beyond Maths, English language and Science, if any, for this version?
-- [ ] Q-5: Gemma 4 license terms and any terms operators must accept — check the official model card and record them in the README.
+- [ ] Q-5: Gemma 4 license terms and any terms operators must accept — `tutor-ipad`'s model manifest records "Gemma Terms of Use"; confirm on the official model card and record them in the README.
 
 ## Assumptions
 <!-- Anything decided without confirmation. Mark in text as [ASSUMPTION A-n]. -->

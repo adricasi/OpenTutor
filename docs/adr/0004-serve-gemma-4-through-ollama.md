@@ -25,11 +25,16 @@ We will run Gemma 4 through Ollama listening on loopback only, with **E4B as the
 and E2B as the fallback**, and keep the model tag and its digest in the hub configuration,
 because Ollama gives operators the simplest setup with the features the spec needs. The
 final default is confirmed by the benchmark spike (T-001) on the hub laptop.
+Gemma 4 26B-A4B is a third candidate for the spike: `tutor-ipad` (same repository)
+measured it at ~1 s to first token and 100 % on its maths judge on an Apple-silicon Mac
+(`tutor-ipad/ink-tutor/docs/MODELS.md`); on the hub it may not fit the GPU's VRAM and
+would partly run on the CPU, so it is chosen only if it meets NFR-005.
 
 ## Consequences
 - Positive: operator setup is `ollama pull` plus our start command; models swap by config
   (AC-012.6).
-- Negative / risks: exact tags, sizes, structured-output and image support for Gemma 4
+- Negative / risks: `tutor-ipad`'s notes say Ollama's vision support "lags" MLX
+  (unverified) — the spike tests image input first; exact tags, sizes, structured-output and image support for Gemma 4
   must be verified on the official Ollama library (Q-3) — the spike tests them; the raw
   Ollama API must never be reachable from the LAN (NFR-001) — the start command checks it.
 - Follow-ups: record model license terms (Q-5); revisit if the spike fails (e.g. move to
