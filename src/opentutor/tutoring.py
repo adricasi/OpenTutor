@@ -154,14 +154,12 @@ class Tutoring:
             first = False
             yield chunk
 
-    async def _structured[T: BaseModel](
-        self, msgs: list[Message], schema: type[T], max_tokens: int = MAX_TOKENS["structured"]
-    ) -> T | None:
+    async def _structured[T: BaseModel](self, msgs: list[Message], schema: type[T]) -> T | None:
         """Ask for JSON matching `schema`; retry once with the validation error (AC-006.4)."""
         deadline = time.monotonic() + self.limits.call_s  # one budget for both attempts
         for _attempt in range(2):
             raw = await asyncio.wait_for(
-                self.model.structured(msgs, schema, max_tokens),
+                self.model.structured(msgs, schema, MAX_TOKENS["structured"]),
                 timeout=max(deadline - time.monotonic(), 0.01),
             )
             try:
@@ -420,9 +418,7 @@ class Tutoring:
         readable = True
         lines = [slot or "" for slot in slots]
         if unread:
-            reading = await self._structured(
-                _reading_messages(image), HandwritingReading, _reading_tokens(unread)
-            )
+            reading = await self._structured(_reading_messages(image), HandwritingReading)
             read = [line.strip() for line in (reading.text if reading else "").splitlines()]
             read = [line for line in read if line]
             readable = bool(reading and reading.readable and read)
@@ -510,10 +506,6 @@ def _reading_messages(image: bytes | None) -> list[Message]:
         {"role": "system", "content": READ_HANDWRITING},
         {"role": "user", "content": "Copy the writing in the image.", "images": [image]},
     ]
-
-
-def _reading_tokens(lines: int) -> int:
-    return min(MAX_TOKENS["structured"], 40 + 60 * lines)
 
 
 def _fill_slots(slots: list[str | None], read: list[str]) -> list[str]:
