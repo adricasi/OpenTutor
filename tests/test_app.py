@@ -201,3 +201,11 @@ def test_nfr_001_refuses_all_interfaces() -> None:
 
 def test_healthz_loopback_only(client: TestClient) -> None:
     assert client.get("/healthz").status_code == 404  # test client address is not loopback
+
+
+def test_browser_form_post_with_same_origin_is_accepted(client: TestClient) -> None:
+    assert client.get("/").headers["referrer-policy"] == "same-origin"
+    response = client.post(
+        "/session", data={"nickname": "Ana"}, headers={"origin": "http://hub.test"}
+    )
+    assert response.status_code == 200
