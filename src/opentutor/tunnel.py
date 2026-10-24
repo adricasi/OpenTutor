@@ -47,9 +47,9 @@ def with_token(url: str, token: str) -> str:
 
 
 def find_cloudflared() -> Path | None:
-    local = TOOLS_BIN / "cloudflared"
-    if local.exists():
-        return local
+    for candidate in (TOOLS_BIN / "cloudflared.exe", TOOLS_BIN / "cloudflared"):
+        if candidate.exists():
+            return candidate
     on_path = shutil.which("cloudflared")
     return Path(on_path) if on_path else None
 

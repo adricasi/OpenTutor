@@ -294,6 +294,7 @@ def _allocate_too_much(connection: Connection) -> None:  # pragma: no cover - ch
         connection.send("allocated")
 
 
+@pytest.mark.skipif(maths.resource is None, reason="resource.setrlimit is Unix-only")
 def test_worker_limits_memory() -> None:
     context = multiprocessing.get_context("spawn")
     parent, child = context.Pipe()

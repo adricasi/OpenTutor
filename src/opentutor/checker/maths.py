@@ -17,7 +17,11 @@ import itertools
 import math
 import multiprocessing
 import re
-import resource
+
+try:
+    import resource
+except ImportError:  # pragma: no cover - non-POSIX / Windows
+    resource = None  # type: ignore[assignment]
 import string
 import threading
 from dataclasses import dataclass
@@ -574,11 +578,15 @@ def _final_verdict(exercise: Step | None, last: Step) -> CheckResult:
 
 def _apply_limits(memory_bytes: int) -> None:
     """Called in the child process only."""
+    if resource is None:
+        return
     resource.setrlimit(resource.RLIMIT_AS, (memory_bytes, memory_bytes))
     _reset_cpu_limit()
 
 
 def _reset_cpu_limit() -> None:
+    if resource is None:
+        return
     usage = resource.getrusage(resource.RUSAGE_SELF)
     used = math.ceil(usage.ru_utime + usage.ru_stime)
     resource.setrlimit(resource.RLIMIT_CPU, (used + CPU_LIMIT_S, resource.RLIM_INFINITY))
