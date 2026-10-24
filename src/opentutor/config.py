@@ -2,7 +2,9 @@
 
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
+from pydantic import field_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -51,8 +53,27 @@ class Settings(BaseSettings):
     online_demo: bool = False
     tunnel_port: int = 8001
 
+    # iPad handwriting tutor (REQ-021, ADR-0008): where GET /ipad sends students. Empty = not
+    # connected; /ipad then shows how to connect it. Only absolute http(s) URLs are accepted.
+    ipad_url: str = ""
+
     tutors_dir: Path = PACKAGE_DIR / "tutors"
     prompts_dir: Path = PACKAGE_DIR / "prompts"
+
+    @field_validator("ipad_url", mode="before")
+    @classmethod
+    def _absolute_http_url(cls, value: object) -> str:
+        """Blank anything that isn't an absolute http(s) URL, so /ipad never redirects there."""
+        text = str(value or "").strip()
+        try:
+            parts = urlsplit(text)
+        except ValueError:
+            return ""
+        if parts.scheme not in {"http", "https"} or not parts.hostname:
+            return ""
+        if any(ch.isspace() or ord(ch) < 32 for ch in text):
+            return ""
+        return text
 
     @classmethod
     def settings_customise_sources(

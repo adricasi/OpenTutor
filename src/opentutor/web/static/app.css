@@ -152,6 +152,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .ot-join-visual > img { width: 100%; height: 176px; object-fit: cover; border-radius: 0 0 var(--radius) var(--radius); display: block; }
 .ot-join-art-caption { margin-top: 16px; display: flex; align-items: center; gap: 10px; color: var(--primary); font-size: 14px; line-height: 1.7; }
 .ot-join-art-caption strong { font-weight: 400; color: var(--muted-foreground); }
+.ot-ipad-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 12px; color: var(--primary); font-size: 15px; font-weight: 500; text-underline-offset: 3px; }
+.ot-ipad-link:hover { text-decoration-thickness: 2px; }
 .ot-join-bottom { display: flex; gap: 30px; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 24px; }
 .ot-join-bottom > span { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 1.7; color: var(--muted-foreground); }
 .ot-join-bottom strong { color: var(--foreground); white-space: nowrap; font-weight: 500; }
@@ -174,6 +176,14 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .ot-subject p { font-size: 15px; line-height: 1.55; margin: 0; }
 .ot-subject-foot { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid currentColor; margin-top: 16px; padding-top: 12px; font-size: 13px; }
 
+/* iPad tutor entry (REQ-021): a neutral card, since it opens a separate service */
+.ot-ipad-card { display: flex; align-items: center; gap: 18px; margin-top: 16px; padding: 18px 22px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: var(--primary); text-decoration: none; }
+.ot-ipad-card:hover { background: var(--secondary); }
+.ot-ipad-card > div { flex: 1; min-width: 0; }
+.ot-ipad-card h2 { display: flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 500; margin: 0 0 4px; color: var(--foreground); }
+.ot-ipad-card h2 > span { font-size: 18px; color: var(--primary); }
+.ot-ipad-card p { font-size: 15px; line-height: 1.55; margin: 0; color: var(--muted-foreground); }
+.ot-ipad-card-tag { font-size: 12px; letter-spacing: .7px; color: var(--muted-foreground); text-transform: uppercase; white-space: nowrap; }
 .ot-discover { display: grid; grid-template-columns: 1.1fr 1fr; gap: 35px; margin-top: 36px; }
 .ot-example { display: flex; align-items: center; gap: 12px; padding: 14px 0; min-height: 56px; border-bottom: 1px solid var(--border); text-decoration: none; font-size: 15px; line-height: 1.5; }
 .ot-example > span:nth-child(2) { flex: 1; }
@@ -301,6 +311,10 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .ot-pin-panel label { display: block; font-size: 15px; margin: 20px 0 10px; }
 .ot-pin-panel input { display: block; width: 100%; padding: 12px; border: 1px solid var(--field-border); border-radius: 6px; background: var(--background); font-size: 22px; letter-spacing: 4px; }
 .ot-pin-panel form > .btn { width: 100%; margin-top: 16px; }
+.ot-ipad-entry > div > .btn { margin-top: 26px; }
+.ot-ipad-setup ol { padding-left: 22px; margin: 0; font-size: 15px; line-height: 1.7; }
+.ot-ipad-setup li { margin: 8px 0; }
+.ot-ipad-setup code { font-size: 14px; padding: 1px 5px; border-radius: 4px; background: var(--secondary); color: var(--foreground); overflow-wrap: anywhere; }
 .ot-stat-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 24px 0; margin: 28px 0; }
 .ot-stat-strip > div { border-right: 1px solid var(--border); padding: 0 24px; }
 .ot-stat-strip > div:first-child { padding-left: 0; }
@@ -381,6 +395,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
   .ot-subject h2 { font-size: 27px; margin: 10px 0 6px; }
   .ot-subject-foot { display: none; }
   .ot-discover { grid-template-columns: 1fr; gap: 26px; margin-top: 28px; }
+  .ot-ipad-card { padding: 16px 18px; gap: 14px; margin-top: 12px; }
+  .ot-ipad-card-tag { display: none; }
   .ot-learning-art { border-left: 0; padding: 0; flex-direction: row; gap: 16px; align-items: center; }
   .ot-learning-art img { width: 110px; height: 100px; }
   .ot-learning-art p { font-size: 18px; }

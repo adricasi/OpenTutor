@@ -239,6 +239,17 @@ configuration unless stated otherwise.
   - AC-020.4: WHEN the student uses "Speak" for the first time in a session THE SYSTEM SHALL say that the phone's speech service turns their voice into text (on some phones that uses the internet) and that the hub never records their voice.
   - AC-020.5: THE SYSTEM SHALL never send audio to the hub; only the text the student chooses to send.
 
+### REQ-021: Open the iPad tutor from the hub
+- Story: As a student with an iPad and Apple Pencil, I want to open the iPad handwriting tutor from the hub's pages, so that I can write my working by hand and see it marked on the page without being given a second address.
+- Priority: Should
+- Goals: G-1, G-2
+- Acceptance criteria:
+  - AC-021.1: WHEN the join page or the subjects page is shown THE SYSTEM SHALL show an iPad entry point ("On an iPad? Write with Apple Pencil" on the join page, a "Write on an iPad" card on the subjects page) that opens `/ipad`.
+  - AC-021.2: WHEN a student opens `/ipad` and the operator has set the iPad tutor's address (`OPENTUTOR_IPAD_URL` or `ipad_url` in `opentutor.toml`) THE SYSTEM SHALL redirect the browser to that address, whether or not the student has joined the hub, on the hub Wi-Fi and through the online demo link (REQ-017, behind its access token).
+  - AC-021.3: IF no iPad tutor address is set THEN THE SYSTEM SHALL show a page saying that the iPad tutor isn't connected to this hub yet and to ask the teacher, with a short note for the operator on how to connect it and a link back to the hub.
+  - AC-021.4: IF the configured address isn't an absolute `http://` or `https://` URL THEN THE SYSTEM SHALL treat it as not set.
+  - AC-021.5: WHEN the hub starts with an iPad tutor address set THE SYSTEM SHALL print that address on the operator's console.
+
 ## Non-functional requirements
 | ID | Category | Requirement (measurable) | Verification |
 |---|---|---|---|
@@ -265,4 +276,4 @@ configuration unless stated otherwise.
 - Stroke-by-stroke marking on the page as the student writes (as `ipad-tutor/` does) — needs its on-device reader; the hub reads the finished writing instead (REQ-019).
 - Several hubs sharing load or syncing — one hub per group in this version.
 - Using the online demo link (REQ-017) as the normal way students reach the hub — it needs internet on the phones and the hub, sends traffic through Cloudflare, and Cloudflare's quick tunnels are documented as for testing only (no uptime guarantee, 200 in-flight requests).
-- Features of `ipad-tutor/` (handwriting canvas, voice, screen tutor) inside the hub — they live in the separate iPad tutor service (ADR-0008).
+- Features of `ipad-tutor/` (handwriting canvas, voice, screen tutor) inside the hub — they live in the separate iPad tutor service (ADR-0008); the hub only links to it (REQ-021).
