@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" width="1200" height="620" font-family="Public Sans, Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+<title id="t">OpenTutor architecture: everything runs on one laptop</title>
+<desc id="d">Phones reach a web app on the hub laptop over its own Wi-Fi. The web app talks to Ollama running Gemma 4 on the loopback interface. Nothing crosses to the internet.</desc>
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#15231F"/></marker></defs>
+<rect width="1200" height="620" fill="#F4EFE5"/>
+<text x="40" y="52" font-size="26" font-weight="700" fill="#15231F">OpenTutor: everything runs on one laptop</text>
+<text x="40" y="80" font-size="16" fill="#4A5A54">Student data and the model never leave the hub.</text>
+<!-- phones -->
+<g><rect x="40" y="170" width="190" height="260" rx="14" fill="#fff" stroke="#15231F" stroke-width="2"/>
+<text x="135" y="212" text-anchor="middle" font-size="18" font-weight="700" fill="#15231F">Student phones</text>
+<text x="135" y="244" text-anchor="middle" font-size="15" fill="#4A5A54">any browser</text>
+<text x="135" y="268" text-anchor="middle" font-size="15" fill="#4A5A54">no app, no account</text>
+<text x="135" y="320" text-anchor="middle" font-size="15" fill="#15231F">type · photo ·</text>
+<text x="135" y="342" text-anchor="middle" font-size="15" fill="#15231F">handwriting · voice</text></g>
+<!-- laptop boundary -->
+<rect x="320" y="120" width="840" height="440" rx="18" fill="#EAE3D2" stroke="#15231F" stroke-width="2.5" stroke-dasharray="10 6"/>
+<text x="344" y="152" font-size="16" font-weight="700" letter-spacing="2" fill="#A8560A">HUB LAPTOP · LINUX · NO INTERNET</text>
+<!-- web app -->
+<rect x="350" y="190" width="400" height="330" rx="12" fill="#fff" stroke="#15231F" stroke-width="2"/>
+<text x="370" y="224" font-size="18" font-weight="700" fill="#15231F">OpenTutor web app (FastAPI)</text>
+<text x="370" y="248" font-size="14" fill="#4A5A54">listens on the hotspot IP only; refuses 0.0.0.0</text>
+<g font-size="15" fill="#15231F">
+<rect x="370" y="268" width="170" height="56" rx="8" fill="#F4EFE5" stroke="#15231F"/><text x="455" y="292" text-anchor="middle">Server-rendered</text><text x="455" y="312" text-anchor="middle">pages + JS</text>
+<rect x="560" y="268" width="170" height="56" rx="8" fill="#F4EFE5" stroke="#15231F"/><text x="645" y="292" text-anchor="middle">Hint ladder +</text><text x="645" y="312" text-anchor="middle">fair queue</text>
+<rect x="370" y="340" width="170" height="56" rx="8" fill="#F4EFE5" stroke="#15231F"/><text x="455" y="364" text-anchor="middle">Subject tutors</text><text x="455" y="384" text-anchor="middle">tutor.toml + rubric</text>
+<rect x="560" y="340" width="170" height="56" rx="8" fill="#F4EFE5" stroke="#15231F"/><text x="645" y="364" text-anchor="middle">Symbolic maths</text><text x="645" y="384" text-anchor="middle">checker (verdicts)</text>
+<rect x="370" y="412" width="360" height="86" rx="8" fill="#E0892F" fill-opacity=".22" stroke="#A8560A"/><text x="550" y="440" text-anchor="middle" font-weight="700">Session state: RAM only</text><text x="550" y="462" text-anchor="middle">messages and photos, deleted on “Finish”</text><text x="550" y="482" text-anchor="middle" font-size="13" fill="#4A5A54">nothing written to disk</text></g>
+<!-- ollama -->
+<rect x="860" y="190" width="270" height="330" rx="12" fill="#15231F"/>
+<text x="995" y="228" text-anchor="middle" font-size="18" font-weight="700" fill="#F4EFE5">Ollama</text>
+<text x="995" y="252" text-anchor="middle" font-size="14" fill="#C8D2CC">127.0.0.1:11434 (loopback)</text>
+<rect x="885" y="280" width="220" height="110" rx="10" fill="#E0892F"/>
+<text x="995" y="324" text-anchor="middle" font-size="22" font-weight="700" fill="#15231F">Gemma 4</text>
+<text x="995" y="352" text-anchor="middle" font-size="15" fill="#15231F">gemma4:e4b · Apache 2.0</text>
+<text x="995" y="376" text-anchor="middle" font-size="14" fill="#15231F">text + vision, local weights</text>
+<text x="995" y="430" text-anchor="middle" font-size="14" fill="#C8D2CC">weights pulled once,</text><text x="995" y="450" text-anchor="middle" font-size="14" fill="#C8D2CC">before the session</text>
+<text x="995" y="490" text-anchor="middle" font-size="14" fill="#C8D2CC">start checks it is not</text><text x="995" y="508" text-anchor="middle" font-size="14" fill="#C8D2CC">reachable on Wi-Fi</text>
+<!-- arrows -->
+<line x1="230" y1="300" x2="348" y2="300" stroke="#15231F" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="289" y="280" text-anchor="middle" font-size="13" fill="#15231F">hub Wi-Fi</text>
+<text x="289" y="324" text-anchor="middle" font-size="13" fill="#15231F">HTTP</text>
+<line x1="750" y1="300" x2="858" y2="300" stroke="#15231F" stroke-width="2.5" marker-end="url(#a)"/>
+<text x="804" y="286" text-anchor="middle" font-size="13" fill="#15231F">localhost</text>
+<!-- internet -->
+<g><rect x="460" y="578" width="280" height="30" rx="15" fill="none" stroke="#9B2C2C" stroke-width="2"/>
+<text x="600" y="598" text-anchor="middle" font-size="14" font-weight="700" fill="#9B2C2C">✕  Internet: no calls at runtime</text></g>
+</svg>
