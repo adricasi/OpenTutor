@@ -17,6 +17,35 @@ who can't pay for tutoring. Specification: [docs/spec](docs/spec/) · decisions:
 > [iPad handwriting tutor](#ipad-handwriting-tutor-ipad-tutor) in `ipad-tutor/`, which runs as its own
 > service on an Apple-silicon Mac ([ADR-0008](docs/adr/0008-integrate-ipad-tutor-as-a-companion-service.md)).
 
+**Contents:** [Quick start](#quick-start) · [Architecture](#architecture) · [Privacy and security](#privacy-and-security) · [Hackathon submission](#hackathon-submission) · [How it works](#how-it-works) · [Run a hub](#run-a-hub-operator-guide) · [The model](#the-model) · [Develop](#develop) · [Contributing](#contributing) · [License](#license)
+
+## Quick start
+Try the interface on any computer, with a fake model (no GPU, no download):
+```bash
+git clone https://github.com/adricasi/opentutor && cd opentutor
+uv sync
+uv run opentutor start --dev        # http://127.0.0.1:8000
+```
+To run a real hub with Gemma 4 on a laptop and a hotspot, follow the [operator guide](#run-a-hub-operator-guide).
+
+## Architecture
+![OpenTutor architecture: phones reach the web app over the hub Wi-Fi; the web app calls Ollama and Gemma 4 on localhost; nothing goes to the internet](docs/architecture.svg)
+
+| Part | Role | Reference |
+|---|---|---|
+| Phones | Any browser, no app or account | [ADR-0002](docs/adr/0002-run-as-a-local-offline-hub.md) |
+| Web app (FastAPI) | Server-rendered pages, hint ladder, queue, tutors; listens on the hotspot IP only | [ADR-0003](docs/adr/0003-use-fastapi-with-server-rendered-pages.md) |
+| Maths checker | A symbolic checker decides maths verdicts, not the model | [ADR-0007](docs/adr/0007-let-a-symbolic-checker-decide-maths-verdicts.md) |
+| Session state | In memory, deleted on Finish | [ADR-0005](docs/adr/0005-keep-session-state-in-memory.md) |
+| Ollama + Gemma 4 | Local model on `127.0.0.1:11434` | [ADR-0004](docs/adr/0004-serve-gemma-4-through-ollama.md) |
+
+## Privacy and security
+- No student data goes to any external service; the hub makes no calls to the internet at runtime.
+- `opentutor start` refuses to listen on all interfaces and refuses to start if Ollama answers on the Wi-Fi address.
+- Nicknames only; messages and photos stay in memory and are deleted when the student taps **Finish**.
+- Secrets live only in `.env` (git-ignored); gitleaks runs in pre-commit and CI; dependencies are locked in `uv.lock` and checked with `pip-audit`.
+- Report a vulnerability by opening a private security advisory on the GitHub repository.
+
 ## Hackathon submission
 We are entering **Best Use of Gemma 4** and **Best Open-Source AI Project**. The organisers' "minimum standard" for the repo and the README is listed below; this section says where each item is met. The same table, with file-level evidence, is in [docs/hackathon/CHECKLIST.md](docs/hackathon/CHECKLIST.md).
 
@@ -50,9 +79,7 @@ Taken from [docs/spec](docs/spec/) (requirements, design, tasks and progress log
 - **Not done yet:** the run against real Gemma 4 on the hub laptop, a phone and the hotspot (task T-001), and the benchmark and soak test (T-015). See [docs/spec/tasks.md](docs/spec/tasks.md).
 
 ## How it works
-```
-phones (any browser) ──hub Wi-Fi, no internet──▶ laptop: OpenTutor web app ──▶ Ollama + Gemma 4 (127.0.0.1)
-```
+See the [architecture diagram](#architecture) above.
 - **Hint first:** nudge → hint → next step → full solution only on request.
 - **Photos:** Gemma 4 reads the worksheet; several exercises on one page → it asks which.
 - **Subject tutors:** Maths, English language and Science, each a folder under
@@ -200,6 +227,13 @@ uv run pip-audit                         # dependency vulnerabilities
 ```
 Configuration: `OPENTUTOR_*` environment variables or `opentutor.toml` (see
 `src/opentutor/config.py`). Workflow: spec-driven (`docs/spec/`), one task per PR.
+
+## Contributing
+Workflow is spec-driven: pick a task in [docs/spec/tasks.md](docs/spec/tasks.md), open one pull request per task, and run before pushing:
+```bash
+uv run ruff check --fix . && uv run ruff format . && uv run mypy src && uv run pytest
+```
+Record significant design choices as a new file in [docs/adr](docs/adr/).
 
 ## Team
 Arnau Miàs, Adrià Casals and Laura Rovira.
