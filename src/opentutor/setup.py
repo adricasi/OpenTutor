@@ -13,7 +13,9 @@ Runner = Callable[[list[str]], subprocess.CompletedProcess[str]]
 
 
 def run(command: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, capture_output=True, text=True, check=False)  # noqa: S603
+    return subprocess.run(
+        command, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False
+    )  # noqa: S603
 
 
 def model_digest(model: str, runner: Runner = run) -> str | None:

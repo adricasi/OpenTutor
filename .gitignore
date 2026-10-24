@@ -41,3 +41,5 @@ CLAUDE.md
 # --- evaluation reports (opentutor eval) ---
 reports/
 opentutor.toml
+cloudflared
+cloudflared.exe
