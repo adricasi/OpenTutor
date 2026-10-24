@@ -25,14 +25,18 @@ from starlette.formparsers import MultiPartParser
 
 from .config import PACKAGE_DIR, Settings
 from .images import ImageRejectedError, prepare_image
+from .insights import Insights, TeacherGate
 from .model import FakeModel, ModelClient, ModelError, OllamaModel
 from .queue import FairQueue, QueueTimeoutError
 from .sessions import Conversation, JoinError, Session, SessionStore
+from .tunnel import TunnelGate, is_tunnel, new_token
 from .tutoring import Intent, Limits, Tutoring
 from .tutors import Tutor, load_tutors
 
 log = logging.getLogger("opentutor")
 COOKIE = "ot_session"
+TEACHER_COOKIE = "ot_teacher"
+LOOPBACK = {"127.0.0.1", "::1"}
 INTENTS: set[str] = {"ask", "new_exercise", "hint", "answer", "check", "practice"}
 SECURITY_HEADERS = {
     "content-security-policy": (
@@ -85,10 +89,13 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         ),
     )
     templates = Jinja2Templates(directory=PACKAGE_DIR / "web" / "templates")
+    insights, teacher = Insights(), TeacherGate()
 
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings, app.state.store, app.state.queue = settings, store, queue
     app.state.model, app.state.tutors = model, tutors
+    app.state.insights, app.state.teacher = insights, teacher
+    app.state.demo_token = new_token() if settings.online_demo else None
     app.mount("/static", StaticFiles(directory=PACKAGE_DIR / "web" / "static"), name="static")
 
     @app.middleware("http")
@@ -107,10 +114,14 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             response.headers.setdefault(name, value)
         return response
 
+    def via_tunnel(request: Request) -> bool:
+        return settings.online_demo and is_tunnel(request.scope, settings.tunnel_port)
+
     def current(request: Request) -> Session | None:
         return store.get(request.cookies.get(COOKIE))
 
     def page(request: Request, name: str, status: int = 200, **context: Any) -> HTMLResponse:
+        context.setdefault("online_demo", via_tunnel(request))
         return templates.TemplateResponse(request, name, context, status_code=status)
 
     @app.get("/", response_class=HTMLResponse)
@@ -126,7 +137,9 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         except JoinError as error:
             return page(request, "join.html", error.status, error=error.message, nickname=nickname)
         response = RedirectResponse("/subjects", status_code=303)
-        response.set_cookie(COOKIE, session.id, httponly=True, samesite="lax", path="/")
+        response.set_cookie(
+            COOKIE, session.id, httponly=True, samesite="lax", path="/", secure=via_tunnel(request)
+        )
         return response
 
     @app.post("/session/end")
@@ -219,6 +232,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             "photo": photo is not None,
         }
         start = time.monotonic()
+        exercise_before = convo.exercise
         try:
             try:
                 async for position in queue.wait_turn():
@@ -233,7 +247,13 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
                 async for event in tutoring.handle(tutor, convo, intent, text, photo):
                     if "first_token_s" not in record and event["type"] == "token":
                         record["first_token_s"] = round(time.monotonic() - start, 2)
+                    if event["type"] == "verdict" and convo.exercise:
+                        insights.verdict(tutor.id, convo.exercise.topic, event["verdict"])
                     yield _line(event)
+                if convo.exercise is not None and convo.exercise is not exercise_before:
+                    insights.exercise(tutor.id, convo.exercise.topic)
+                if intent == "hint":
+                    insights.hint(tutor.id)
                 yield _line({"type": "done"})
                 record["outcome"] = "ok"
             except (ModelError, TimeoutError) as error:
@@ -248,13 +268,46 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             record["total_s"] = round(time.monotonic() - start, 2)
             log.info(json.dumps(record))
 
+    def teacher_allowed(request: Request) -> None:
+        if not settings.teacher_from_network and client_address(request) not in LOOPBACK:
+            raise HTTPException(404)
+
+    @app.get("/teacher", response_class=HTMLResponse)
+    async def teacher_page(request: Request) -> Response:
+        teacher_allowed(request)
+        authorised = teacher.is_teacher(request.cookies.get(TEACHER_COOKIE))
+        return page(
+            request,
+            "teacher.html",
+            authorised=authorised,
+            insights=insights,
+            tutors=list(tutors.values()),
+        )
+
+    @app.post("/teacher/login")
+    async def teacher_login(request: Request, pin: Annotated[str, Form()] = "") -> Response:
+        teacher_allowed(request)
+        address = client_address(request)
+        if not teacher.login(address, pin):
+            message = (
+                "Too many wrong tries. Wait 5 minutes."
+                if teacher.locked(address)
+                else "Wrong PIN. Check the hub laptop's screen."
+            )
+            return page(request, "teacher.html", 401, authorised=False, error=message)
+        response = RedirectResponse("/teacher", status_code=303)
+        response.set_cookie(TEACHER_COOKIE, teacher.token, httponly=True, samesite="lax")
+        return response
+
     @app.get("/healthz")
     async def healthz(request: Request) -> Response:
-        if client_address(request) not in {"127.0.0.1", "::1"}:
+        if client_address(request) not in LOOPBACK:
             raise HTTPException(404)
         ok, message = await model.health()
         return JSONResponse({"ok": ok, "model": message}, status_code=200 if ok else 503)
 
+    if settings.online_demo:
+        app.add_middleware(TunnelGate, tunnel_port=settings.tunnel_port, token=app.state.demo_token)
     return app
 
 

@@ -264,9 +264,10 @@ def run(
     case: ExerciseCase | None = None,
     safety: list[SafetyPrompt] | None = None,
     safety_only: bool = False,
+    tutor_id: str = "maths",
 ) -> TutorResult:
-    tutors = {"maths": load_tutors(SETTINGS.tutors_dir)["maths"]}
-    cases = {"maths": [case] if case else []}
+    tutors = {tutor_id: load_tutors(SETTINGS.tutors_dir)[tutor_id]}
+    cases = {tutor_id: [case] if case else []}
     results = asyncio.run(
         run_evaluation(
             tutoring_for(model),
@@ -277,7 +278,7 @@ def run(
             safety_only=safety_only,
         )
     )
-    return results["maths"]
+    return results[tutor_id]
 
 
 def test_runner_end_to_end_with_queued_fake_replies() -> None:
@@ -328,9 +329,12 @@ def test_judge_can_fail_a_reply_that_hides_the_answer_in_other_words() -> None:
 def test_wrong_verdicts_lower_accuracy_and_answer_reveals_are_reported() -> None:
     model = FakeModel()
     model.structured_replies["JudgeVerdict"] = [JUDGE_PASS] * 2
-    wrong = json.dumps({"verdict": "correct", "explanation": "x = 4 is right"})
+    # Science has no deterministic checker, so the (wrong) model verdicts are what get scored.
+    science_case = load_cases(EVALS_DIR, "science")[0]
+    explanation = f"{science_case.expected_answer} is right"
+    wrong = json.dumps({"verdict": "correct", "explanation": explanation})
     model.structured_replies["Verdict"] = [verdict_json("partly_correct"), wrong]
-    result = run(model, one_case())
+    result = run(model, science_case, tutor_id="science")
     assert result.verdict_accuracy == Rate(passed=0, total=2)
     assert result.check_no_reveal == Rate(passed=0, total=1)
 

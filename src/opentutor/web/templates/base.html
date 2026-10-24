@@ -13,6 +13,7 @@
     <form method="post" action="/session/end"><button class="link" type="submit">Finish</button></form>
     {% endif %}
   </header>
+  {% if online_demo %}<p class="demo" role="note">Online demo: this page reaches the hub through the internet (Cloudflare). For classroom use, join the hub Wi-Fi instead.</p>{% endif %}
   <main>{% block main %}{% endblock %}</main>
   <footer class="note">AI can make mistakes — check with your teacher. Your messages and photos stay on this hub and are deleted when you finish.</footer>
   {% block scripts %}{% endblock %}
