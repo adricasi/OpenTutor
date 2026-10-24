@@ -37,3 +37,4 @@ build/
 .agents/
 CLAUDE.md
 .mcp.json
+opentutor.toml

@@ -68,7 +68,9 @@ class OllamaModel:
             return False, "Ollama is not running. Start it with: sudo systemctl start ollama"
         for entry in listing.models:
             if entry.model == self.model or entry.model == f"{self.model}:latest":
-                if self.digest and entry.digest != self.digest:
+                if self.digest and not (entry.digest or "").startswith(
+                    self.digest
+                ):  # list shows a prefix
                     return False, f"Model {self.model} digest {entry.digest} != configured digest"
                 return True, f"{self.model} ready"
         return False, f"Model {self.model} is not downloaded. Run: ollama pull {self.model}"
