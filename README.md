@@ -25,6 +25,8 @@ phones (any browser) ──hub Wi-Fi, no internet──▶ laptop: OpenTutor web
 - **Subject tutors:** Maths, English language and Science, each a folder under
   `src/opentutor/tutors/` (`tutor.toml` + `rubric.md`). Add a subject by adding a folder.
 - **Fair queue:** students see their place in line when the tutor is busy.
+- **Read aloud:** each tutor reply has a 🔊 button that uses the phone's own on-device voice
+  (hidden if the phone has none), so students who find reading hard can listen.
 
 ## Run a hub (operator guide)
 Reference machine: Linux with NetworkManager, 64 GB RAM, a dedicated GPU, ~20 GB disk.
@@ -67,6 +69,7 @@ at the end of the day (this clears everything).
 uv sync
 uv run opentutor start --dev             # fake model, http://127.0.0.1:8000
 uv run pytest --cov                      # tests (no network, no model needed)
+RUN_E2E=1 uv run pytest tests/test_read_aloud.py   # browser tests (node + Playwright)
 uv run ruff check --fix . && uv run ruff format .   # lint + format
 uv run mypy src                          # type check
 uv run pip-audit                         # dependency vulnerabilities
