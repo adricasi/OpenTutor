@@ -1,0 +1,13 @@
+# Sudoku: the 9×9 grid is found from the ink (ink/grid.py); each written cell is read as one digit.
+# The checker owns the ✗ marks (row/column/box conflicts, miscopied givens); the tutor explains the next
+# deducible move and never fills a cell.
+recognizer = "grid"
+checkers = ["sudoku.valid"]
+marks = ["cross", "check", "question", "circle"]
+checker_marks = ["cross", "check"]  # a tutor ✗ becomes a question; ✓ only for a solved grid
+# Digits that break no rule but contradict the puzzle's unique solution (needs the puzzle in the problem):
+#   "on_request" (default): named only in hints, when the student asks;  "unprompted": ✗ them like conflicts.
+solution_check = "on_request"
+ghost_unprompted = false  # never write digits on the page
+confidence_gate = 0.5
+settle_ms = 1500          # a digit is short: grade it sooner than a maths line

@@ -1,0 +1,19 @@
+import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
+
+// Dev: the web app talks to the FastAPI server on :8000 (REST + WebSocket) through this proxy,
+// so the iPad only needs one URL (http://<mac>.local:5173).
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    host: "0.0.0.0",
+    port: 5173,
+    proxy: {
+      "/api": "http://127.0.0.1:8000",
+      "/ws": { target: "ws://127.0.0.1:8000", ws: true },
+      "/healthz": "http://127.0.0.1:8000",
+    },
+  },
+  build: { outDir: "dist", sourcemap: true },
+  test: { environment: "jsdom", include: ["src/**/*.test.ts", "src/**/*.test.tsx"] },
+});

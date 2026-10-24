@@ -1,0 +1,4 @@
+cache=@REPO@/.cache/npm
+fund=false
+audit=false
+update-notifier=false

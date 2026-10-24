@@ -1,0 +1,7 @@
+# Consulting cases: issue trees, frameworks, market sizing. The tutor only adds: pins, circles, ghost branches.
+recognizer = "diagram"
+checkers = ["graph.tree"]
+marks = ["pin", "circle", "question"]
+ghost_unprompted = true    # dashed suggestions for missing branches are the point of diagram feedback
+confidence_gate = 0.3      # labels: only ask when the reading is really unsure
+settle_ms = 2500

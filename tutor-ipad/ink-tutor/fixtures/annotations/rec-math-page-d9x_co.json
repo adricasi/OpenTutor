@@ -1,0 +1,15 @@
+{
+  "recording": "rec-math-page-d9x_co.json",
+  "mode": "math",
+  "problem": "Solve 2x + 5 = 4x, and compute ∫₀² √(x+2) dx.",
+  "note": "Photo-only session (paper). Problem drafted automatically from what is written.",
+  "photos": {
+    "ph_mvm1hnly_cq": {
+      "id": "ph_mvm1hnly_cq",
+      "truth": "2x+5=4x;\\ 5=4x-2x;\\ 5=3x;\\ x=\\frac{5}{3}\n\\int_{0}^{2}\\sqrt{x+2}\\,dx=\\left[\\frac{1}{\\sqrt{x+2}}\\right]_{0}^{2}=\\frac{1}{\\sqrt{2+2}}-\\frac{1}{\\sqrt{0+2}}=\\frac{1}{\\sqrt{4}}-\\frac{1}{\\sqrt{2}}=",
+      "expect": "Line 1: ✗ at '5 = 3x' (4x − 2x = 2x); underline 3x; nudge 'what is 4x − 2x?'. x = 5/3 follows from that step: don't mark it separately. Line 2: ✗ on 1/√(x+2): that is not an antiderivative of √(x+2) (differentiate it to check); level 3 ghost: (2/3)(x+2)^{3/2}. The line ends with '=' (unfinished): no mark on 1/√4 − 1/√2.",
+      "note": "'Mar' at the top-left is from another sheet. Blue ballpoint on white paper, photographed at an angle.",
+      "draftedBy": "auto"
+    }
+  }
+}

@@ -1,0 +1,36 @@
+[project]
+name = "inktutor"
+version = "0.1.0"
+description = "Ink Tutor workspace root (server + protocol). Spec, fixtures and model manifest live in ../ink-tutor/."
+requires-python = ">=3.12,<3.13"
+dependencies = ["inktutor-protocol", "inktutor-server[mlx]"]
+
+[tool.uv.workspace]
+members = ["packages/protocol", "apps/server"]
+
+[tool.uv.sources]
+inktutor-protocol = { workspace = true }
+inktutor-server = { workspace = true }
+
+[dependency-groups]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "httpx>=0.27", "ruff>=0.6", "mypy>=1.11"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]  # unicode math symbols in strings/comments are intentional
+
+[tool.pytest.ini_options]
+testpaths = ["apps/server/tests", "packages/protocol/tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.mypy]
+python_version = "3.12"
+
+[[tool.mypy.overrides]]
+module = ["sympy.*", "mlx.*", "mlx_vlm.*", "PIL.*", "segno.*"]
+ignore_missing_imports = true

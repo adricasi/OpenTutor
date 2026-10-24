@@ -1,0 +1,3 @@
+# Keep uv caches inside the repo base folder (absolute: uv resolves relative cache-dir against the cwd).
+# `./setup-local.sh` writes uv.toml from this file with the real path.
+cache-dir = "@REPO@/.cache/uv"

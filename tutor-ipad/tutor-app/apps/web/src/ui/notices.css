@@ -1,0 +1,47 @@
+/* Phase 10: toasts, reconnect banner, memory light, onboarding. Small and out of the way of the page. */
+
+/* toasts: bottom centre, never more than 3, auto-dismiss; only the toasts themselves take touches */
+.toasts { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(440px, calc(100% - 32px));
+  display: flex; flex-direction: column; gap: 6px; z-index: 30; pointer-events: none; }
+.toast { pointer-events: auto; display: flex; align-items: flex-start; gap: 8px; background: #fff; border: 1px solid var(--line);
+  border-left: 4px solid var(--muted); border-radius: 12px; padding: 8px 6px 8px 12px; box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  font-size: 14px; line-height: 1.35; animation: toast-in .18s ease-out; }
+.toast.warn { border-left-color: #d29922; }
+.toast.error { border-left-color: var(--major); }
+.toast.info { border-left-color: var(--ok); }
+.toast-body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.toast-body span { color: var(--muted); }
+.toast-x { min-height: 28px; padding: 0 8px; border: 0; background: transparent; font-size: 18px; line-height: 1; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
+
+/* reconnect banner: one thin pill under the toolbar */
+.conn-banner { position: fixed; top: calc(var(--barh) + 6px); left: 50%; transform: translateX(-50%); z-index: 25;
+  width: max-content; max-width: calc(100% - 32px); display: flex; align-items: center; gap: 8px;
+  background: #fff8e6; border: 1px solid #e3b341; color: #6b4d00; border-radius: 999px; padding: 4px 6px 4px 14px; font-size: 13px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+.conn-banner button { min-height: 28px; padding: 2px 10px; border-radius: 999px; font-size: 13px; }
+.conn-banner .toast-x { padding: 0 6px; }
+
+/* memory light */
+.mem-light { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 5px 10px; border-radius: 999px; white-space: nowrap; }
+.mem-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #8c959f; flex: none; }
+.mem-light.green .mem-dot, .mem-dot.green { background: var(--ok); }
+.mem-light.amber .mem-dot, .mem-dot.amber { background: #d29922; }
+.mem-light.red .mem-dot, .mem-dot.red { background: var(--major); }
+.mem-light.red { border-color: var(--major); color: var(--major); }
+.mem-details p { margin: 4px 0; }
+.settings .check { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start; padding: 4px 0; }
+.settings .check input { margin-top: 3px; }
+
+/* onboarding */
+.intro-backdrop { position: fixed; inset: 0; background: rgba(31,35,40,.35); display: grid; place-items: center; z-index: 40; padding: 16px; }
+.intro { width: min(460px, 100%); }
+.intro h2 { margin: 4px 0 10px; font-size: 22px; }
+.intro p { line-height: 1.5; margin: 0 0 14px; }
+.intro-step { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+.intro-dots { display: flex; gap: 6px; margin-bottom: 14px; }
+.intro-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.intro-dots span.on { background: var(--tutor); }
+.intro-row { display: flex; gap: 8px; align-items: center; }
+.intro-grow { flex: 1; }
+.start .linkish { border: 0; background: transparent; color: var(--accent); min-height: 32px; padding: 0; }
