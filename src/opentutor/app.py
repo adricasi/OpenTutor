@@ -29,6 +29,7 @@ from .insights import Insights, TeacherGate
 from .model import FakeModel, ModelClient, ModelError, OllamaModel
 from .queue import FairQueue, QueueTimeoutError
 from .sessions import Conversation, JoinError, Session, SessionStore
+from .tunnel import TunnelGate, is_tunnel, new_token
 from .tutoring import Intent, Limits, Tutoring
 from .tutors import Tutor, load_tutors
 
@@ -94,6 +95,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
     app.state.settings, app.state.store, app.state.queue = settings, store, queue
     app.state.model, app.state.tutors = model, tutors
     app.state.insights, app.state.teacher = insights, teacher
+    app.state.demo_token = new_token() if settings.online_demo else None
     app.mount("/static", StaticFiles(directory=PACKAGE_DIR / "web" / "static"), name="static")
 
     @app.middleware("http")
@@ -112,10 +114,14 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             response.headers.setdefault(name, value)
         return response
 
+    def via_tunnel(request: Request) -> bool:
+        return settings.online_demo and is_tunnel(request.scope, settings.tunnel_port)
+
     def current(request: Request) -> Session | None:
         return store.get(request.cookies.get(COOKIE))
 
     def page(request: Request, name: str, status: int = 200, **context: Any) -> HTMLResponse:
+        context.setdefault("online_demo", via_tunnel(request))
         return templates.TemplateResponse(request, name, context, status_code=status)
 
     @app.get("/", response_class=HTMLResponse)
@@ -131,7 +137,9 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         except JoinError as error:
             return page(request, "join.html", error.status, error=error.message, nickname=nickname)
         response = RedirectResponse("/subjects", status_code=303)
-        response.set_cookie(COOKIE, session.id, httponly=True, samesite="lax", path="/")
+        response.set_cookie(
+            COOKIE, session.id, httponly=True, samesite="lax", path="/", secure=via_tunnel(request)
+        )
         return response
 
     @app.post("/session/end")
@@ -298,6 +306,8 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         ok, message = await model.health()
         return JSONResponse({"ok": ok, "model": message}, status_code=200 if ok else 503)
 
+    if settings.online_demo:
+        app.add_middleware(TunnelGate, tunnel_port=settings.tunnel_port, token=app.state.demo_token)
     return app
 
 
