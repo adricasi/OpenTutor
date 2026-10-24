@@ -251,3 +251,10 @@ def test_ac_013_3_typed_exercise_topic_classified(settings: Settings, fake: Fake
                 break
             time.sleep(0.02)
     assert app.state.insights.by_tutor["maths"].topics == {"equations": 1}
+
+
+def test_icons_are_single_closed_svgs(client: TestClient) -> None:
+    html = client.get("/").text
+    assert html.count("<svg") == html.count("</svg>")
+    assert "lucide" not in html  # only our own <svg class="icon"> wrapper, no nested copies
+    assert "No account" in html.split("ot-join-promises")[1].split("</div>")[0]

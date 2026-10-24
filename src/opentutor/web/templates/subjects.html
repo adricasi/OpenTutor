@@ -1,9 +1,34 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}Choose your tutor · OpenTutor{% endblock %}
 {% block main %}
-<h1>Hi {{ session.nickname }}! Pick a subject</h1>
-<ul class="subjects">
-  {% for tutor in tutors %}
-  <li><a class="card subject" href="/chat/{{ tutor.id }}"><strong>{{ tutor.config.name }}</strong><span>{{ tutor.config.description }}</span></a></li>
+<span class="ot-page-kicker"><span class="ot-star">✳</span> Your next lightbulb moment</span>
+<div class="ot-title-row">
+  <div><h1>Hey, {{ session.nickname }}.<br><span class="ot-muted-title">What’s your question?</span></h1>
+  <p>Pick a subject. Bring a question. We’ll figure it out together.</p></div>
+  <span class="ot-open-label" aria-hidden="true">OPEN MINDS<br>WELCOME HERE ↙</span>
+</div>
+<div class="ot-section-title"><h2>Your tutors</h2><span>01 — CHOOSE A SUBJECT</span></div>
+<ul class="ot-subjects">
+  {% for tutor in tutors %}{% set look = subject_look(tutor) %}
+  <li><a class="ot-subject {{ look.css }}" href="/chat/{{ tutor.id }}">
+    <div class="ot-subject-top">{{ icon(look.icon, 25) }}<span>0{{ loop.index }}</span></div>
+    <h2>{{ tutor.config.name }}<span aria-hidden="true">↗</span></h2>
+    <p>{{ tutor.config.description }}</p>
+    <div class="ot-subject-foot"><span>Let’s work it out</span><span>{{ look.short }}</span></div>
+  </a></li>
   {% endfor %}
 </ul>
+<div class="ot-discover">
+  <div>
+    <div class="ot-section-title"><h2>A little inspiration</h2><span>02 — TRY A QUESTION</span></div>
+    {% for tutor in tutors if tutor.config.examples %}{% set look = subject_look(tutor) %}
+    <a class="ot-example {{ look.css }}" href="/chat/{{ tutor.id }}?example=1"><span class="ot-topic-dot"></span><span>{{ tutor.config.examples[0].student }}</span>{{ icon("arrow-up-right", 17) }}</a>
+    {% endfor %}
+  </div>
+  <div class="ot-learning-art">
+    <img src="/static/learning.jpg" alt="A notebook, a pencil and colourful geometric shapes" width="1152" height="576">
+    <div><span class="ot-page-kicker">Progress, not perfection</span><p>You don’t have to<br>know it all. <span>Yet.</span></p></div>
+  </div>
+</div>
 {% endblock %}

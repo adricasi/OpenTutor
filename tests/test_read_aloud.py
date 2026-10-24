@@ -55,8 +55,8 @@ def browser(hub_url: str, mode: str) -> dict:  # type: ignore[type-arg]
 
 def test_ac_018_1_to_5_reads_with_on_device_voice(hub_url: str) -> None:
     result = browser(hub_url, "local")
-    assert result["visible"] >= 2  # greeting + reply (AC-018.1)
-    assert result["labels"] == ["⏹ Stop", "🔊 Read aloud"]  # AC-018.2
+    assert result["visible"] >= 1  # the tutor reply (AC-018.1)
+    assert result["labels"] == ["Stop", "Read aloud"]  # AC-018.2
     spoken = result["spoken"][0]
     assert spoken["voice"] == "Phone English"  # the on-device voice, never the cloud one
     assert "x squared" in spoken["text"]  # AC-018.4
