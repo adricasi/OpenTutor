@@ -115,6 +115,28 @@ def subject_look(tutor: Tutor) -> dict[str, str]:
     return {"css": css, "icon": icon, "short": short}
 
 
+MAX_PAD_LINES = 30
+MAX_PAD_LINE_CHARS = 200
+
+
+def parse_pad_lines(raw: str) -> list[str | None]:
+    """The pad's line slots for a live mark: already-read text, or null for a line to read."""
+    try:
+        slots = json.loads(raw)
+    except json.JSONDecodeError as error:
+        raise HTTPException(400, "Bad pad lines") from error
+    if (
+        not isinstance(slots, list)
+        or len(slots) > MAX_PAD_LINES
+        or not all(
+            slot is None or (isinstance(slot, str) and len(slot) <= MAX_PAD_LINE_CHARS)
+            for slot in slots
+        )
+    ):
+        raise HTTPException(400, "Bad pad lines")
+    return [slot.strip() if isinstance(slot, str) else None for slot in slots]
+
+
 def session_ref(session_id: str) -> str:
     """Short, non-reversible reference for logs: never log the cookie value itself."""
     return hashlib.sha256(session_id.encode()).hexdigest()[:12]
@@ -295,6 +317,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         text: Annotated[str, Form()] = "",
         practice: Annotated[str, Form()] = "",
         handwriting: Annotated[str, Form()] = "",
+        lines: Annotated[str, Form()] = "",
         image: UploadFile | None = None,
     ) -> Response:
         session = current(request)
@@ -307,6 +330,12 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             raise HTTPException(
                 400, f"Messages can be at most {settings.max_message_chars} characters"
             )
+        known_lines = parse_pad_lines(lines) if intent == "mark" and lines else None
+        if (
+            known_lines
+            and sum(len(line or "") for line in known_lines) > settings.max_message_chars
+        ):
+            raise HTTPException(400, "Bad pad lines")  # the checker gets no more than a message
         photo: bytes | None = None
         if image is not None and image.filename:
             raw = await image.read(settings.max_upload_bytes + 1)
@@ -334,6 +363,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             now,
             practice == "1",
             handwriting == "1",
+            known_lines,
         )
         return StreamingResponse(stream, media_type="application/x-ndjson")
 
@@ -381,6 +411,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         accepted_at: float,
         practice_answers: bool,
         handwriting: bool,
+        known_lines: list[str | None] | None = None,
     ) -> AsyncIterator[bytes]:
         convo = session.conversation
         if convo is None:
@@ -409,7 +440,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             try:
                 yield _line({"type": "started"})
                 events = tutoring.handle(
-                    tutor, convo, intent, text, photo, practice_answers, handwriting
+                    tutor, convo, intent, text, photo, practice_answers, handwriting, known_lines
                 )
                 async for event in events:
                     if "first_token_s" not in record and event["type"] == "token":

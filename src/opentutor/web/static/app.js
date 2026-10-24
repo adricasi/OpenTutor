@@ -336,7 +336,7 @@
     const readingList = document.getElementById("pad-reading");
     const padStatus = document.getElementById("pad-status");
     const ROW = 52; // CSS px between the ruled lines (matches the pad background)
-    const PAUSE_MS = 1800;
+    const PAUSE_MS = 700; // ipad-tutor's pen-up debounce
     const MARK_GLYPH = { correct: "✓", wrong: "✗", unknown: "?" };
     const MARK_WORDS = { correct: "correct", wrong: "check this step", unknown: "can’t tell yet" };
     let strokes = [];
@@ -344,6 +344,7 @@
     let version = 0;
     let timer = null;
     let pending = null;
+    let readings = new Map(); // ruled row -> { sig, text } for lines the hub has already read
 
     function size() {
       const ratio = window.devicePixelRatio || 1;
@@ -353,7 +354,7 @@
       redraw();
     }
 
-    function redraw(target) {
+    function redraw(target, only) {
       const c = target || ctx;
       const w = c.canvas.width;
       const h = c.canvas.height;
@@ -362,7 +363,7 @@
       c.lineCap = "round";
       c.lineJoin = "round";
       c.lineWidth = Math.max(2.5, w / 220);
-      strokes.forEach((stroke) => {
+      (only || strokes).forEach((stroke) => {
         c.beginPath();
         stroke.forEach((pt, i) => { const x = pt[0] * w; const y = pt[1] * h; if (i === 0) c.moveTo(x, y); else c.lineTo(x, y); });
         if (stroke.length === 1) c.lineTo(stroke[0][0] * w + 0.1, stroke[0][1] * h);
@@ -370,18 +371,55 @@
       });
     }
 
-    // Live marking (AC-019.6): after a pause the hub reads the pad and marks each line,
-    // the way ipad-tutor marks a page. Strokes are grouped by the ruled line they sit on.
+    // Live marking (AC-019.6), as ipad-tutor does it: strokes are grouped by the ruled line
+    // they sit on, and after a short pause only new or changed lines are sent, cropped and
+    // stacked, with the text of the lines already read. An undo needs no reading at all.
     function rows() {
       const height = canvas.getBoundingClientRect().height;
       const byRow = new Map();
       strokes.forEach((stroke) => {
         const meanY = stroke.reduce((sum, pt) => sum + pt[1], 0) / stroke.length;
         const row = Math.floor((meanY * height) / ROW);
-        const maxX = Math.max(...stroke.map((pt) => pt[0]));
-        byRow.set(row, Math.max(byRow.get(row) || 0, maxX));
+        if (!byRow.has(row)) byRow.set(row, []);
+        byRow.get(row).push(stroke);
       });
-      return [...byRow.entries()].sort((a, b) => a[0] - b[0]).map(([row, maxX]) => ({ row: row, maxX: maxX }));
+      return [...byRow.entries()].sort((a, b) => a[0] - b[0]).map(([row, list]) => {
+        const points = list.flat();
+        return {
+          row: row,
+          strokes: list,
+          sig: list.map((st) => st.length + ":" + st[0].join(",")).join("|"),
+          minX: points.reduce((m, pt) => Math.min(m, pt[0]), 1),
+          maxX: points.reduce((m, pt) => Math.max(m, pt[0]), 0),
+          minY: points.reduce((m, pt) => Math.min(m, pt[1]), 1),
+          maxY: points.reduce((m, pt) => Math.max(m, pt[1]), 0),
+        };
+      });
+    }
+
+    // The given lines cropped from the pad and stacked top to bottom, on white.
+    async function crops(lines) {
+      const w = canvas.width;
+      const h = canvas.height;
+      const full = document.createElement("canvas");
+      full.width = w;
+      full.height = h;
+      redraw(full.getContext("2d"), lines.flatMap((l) => l.strokes));
+      const margin = Math.round(w / 40);
+      const boxes = lines.map((l) => {
+        const x = Math.max(0, Math.floor(l.minX * w) - margin);
+        const y = Math.max(0, Math.floor(l.minY * h) - margin);
+        return { x: x, y: y, w: Math.min(w, Math.ceil(l.maxX * w) + margin) - x, h: Math.min(h, Math.ceil(l.maxY * h) + margin) - y };
+      });
+      const out = document.createElement("canvas");
+      out.width = Math.max(...boxes.map((b) => b.w));
+      out.height = boxes.reduce((sum, b) => sum + b.h, 0) + margin * (boxes.length - 1);
+      const c = out.getContext("2d");
+      c.fillStyle = "#ffffff";
+      c.fillRect(0, 0, out.width, out.height);
+      let top = 0;
+      boxes.forEach((b) => { c.drawImage(full, b.x, b.y, b.w, b.h, 0, top, b.w, b.h); top += b.h + margin; });
+      return new Promise((resolve) => out.toBlob(resolve, "image/png"));
     }
 
     function clearMarks(message) {
@@ -395,28 +433,25 @@
       if (strokes.length) timer = window.setTimeout(liveCheck, PAUSE_MS);
     }
 
-    function showMarks(event) {
-      if (!event.readable) { padStatus.textContent = "I can’t read that yet. Try writing a little bigger."; return; }
+    function showMarks(event, lines) {
       const width = canvas.getBoundingClientRect().width;
-      const lineRows = rows();
       event.lines.forEach((line, i) => {
-        const place = lineRows[i];
-        if (place) {
-          const mark = document.createElement("span");
-          mark.className = "ot-mark " + line.mark;
-          mark.textContent = MARK_GLYPH[line.mark];
-          mark.style.left = Math.min(place.maxX * width + 10, width - 34) + "px";
-          mark.style.top = place.row * ROW + ROW / 2 + "px";
-          marksBox.appendChild(mark);
-        }
+        const place = lines[i];
+        if (!line.text || !place) return;
+        const mark = document.createElement("span");
+        mark.className = "ot-mark " + line.mark;
+        mark.textContent = MARK_GLYPH[line.mark];
+        mark.style.left = Math.min(place.maxX * width + 10, width - 34) + "px";
+        mark.style.top = place.row * ROW + ROW / 2 + "px";
+        marksBox.appendChild(mark);
         const item = document.createElement("li");
         item.className = line.mark;
         item.textContent = line.text + " — " + MARK_WORDS[line.mark];
         readingList.appendChild(item);
       });
-      const marks = event.lines.map((l) => l.mark);
-      padStatus.textContent = marks.includes("wrong")
-        ? "Look again at the line marked ✗. Tap Another hint if you’re stuck."
+      const marks = event.lines.filter((l) => l.text).map((l) => l.mark);
+      padStatus.textContent = !event.readable ? "I can’t read the new writing yet. Try writing a little bigger."
+        : marks.includes("wrong") ? "Look again at the line marked ✗. Tap Another hint if you’re stuck."
         : event.verdict === "correct" ? "All correct. Well done!"
         : event.verdict === "partly_correct" ? "Good so far. Keep going."
         : "Keep going. I’ll mark each line when you pause.";
@@ -428,18 +463,16 @@
       if (!hasExercise()) { clearMarks("Send the exercise first, then write your working here and I’ll mark each line."); return; }
       if (busyNow || pending) { schedule(); return; }
       const asked = version;
-      padStatus.textContent = "Reading your writing…";
+      const lines = rows();
+      const fresh = lines.filter((l) => (readings.get(l.row) || {}).sig !== l.sig);
+      if (fresh.length) padStatus.textContent = "Reading your writing…";
       pending = (async () => {
         try {
-          const out = document.createElement("canvas");
-          out.width = canvas.width;
-          out.height = canvas.height;
-          redraw(out.getContext("2d"));
-          const blob = await new Promise((resolve) => out.toBlob(resolve, "image/png"));
           const data = new FormData();
           data.append("intent", "mark");
           data.append("handwriting", "1");
-          data.append("image", blob, "pad.png");
+          data.append("lines", JSON.stringify(lines.map((l) => (fresh.includes(l) ? null : readings.get(l.row).text))));
+          if (fresh.length) data.append("image", await crops(fresh), "pad.png");
           const res = await fetch("/api/messages", { method: "POST", body: data });
           if (!res.ok) {
             if (asked !== version) return;
@@ -447,13 +480,14 @@
             else padStatus.textContent = "Couldn’t check right now. Keep writing.";
             return;
           }
-          const lines = (await res.text()).split("\n").filter(Boolean).map((l) => JSON.parse(l));
+          const events = (await res.text()).split("\n").filter(Boolean).map((l) => JSON.parse(l));
+          const marks = events.find((ev) => ev.type === "marks");
+          // Keep what was read even if the student kept writing: those lines needn't be read again.
+          if (marks) marks.lines.forEach((line, i) => { if (line.text && fresh.includes(lines[i])) readings.set(lines[i].row, { sig: lines[i].sig, text: line.text }); });
           if (asked !== version) return; // the student kept writing: these marks are stale
           clearMarks();
-          lines.forEach((ev) => {
-            if (ev.type === "marks") showMarks(ev);
-            else if (ev.type === "error" || ev.type === "notice") padStatus.textContent = ev.message;
-          });
+          if (marks) showMarks(marks, lines);
+          events.forEach((ev) => { if (ev.type === "error" || ev.type === "notice") padStatus.textContent = ev.message; });
         } catch (e) {
           if (asked === version) padStatus.textContent = "Couldn’t check right now. Keep writing.";
         } finally {
@@ -498,6 +532,7 @@
     function close() {
       box.hidden = true;
       strokes = [];
+      readings.clear();
       current = null;
       version++;
       window.clearTimeout(timer);
@@ -520,7 +555,7 @@
     }
 
     document.getElementById("pad-undo").addEventListener("click", () => { strokes.pop(); version++; clearMarks(); redraw(); schedule(); });
-    document.getElementById("pad-clear").addEventListener("click", () => { strokes = []; version++; clearMarks(); redraw(); window.clearTimeout(timer); });
+    document.getElementById("pad-clear").addEventListener("click", () => { strokes = []; readings.clear(); version++; clearMarks(); redraw(); window.clearTimeout(timer); });
     document.getElementById("pad-cancel").addEventListener("click", close);
     document.getElementById("pad-use").addEventListener("click", use);
     window.addEventListener("resize", () => { if (!box.hidden) { size(); version++; clearMarks(); schedule(); } });
