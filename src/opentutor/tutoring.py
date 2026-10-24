@@ -154,12 +154,14 @@ class Tutoring:
             first = False
             yield chunk
 
-    async def _structured[T: BaseModel](self, msgs: list[Message], schema: type[T]) -> T | None:
+    async def _structured[T: BaseModel](
+        self, msgs: list[Message], schema: type[T], max_tokens: int = MAX_TOKENS["structured"]
+    ) -> T | None:
         """Ask for JSON matching `schema`; retry once with the validation error (AC-006.4)."""
         deadline = time.monotonic() + self.limits.call_s  # one budget for both attempts
         for _attempt in range(2):
             raw = await asyncio.wait_for(
-                self.model.structured(msgs, schema, MAX_TOKENS["structured"]),
+                self.model.structured(msgs, schema, max_tokens),
                 timeout=max(deadline - time.monotonic(), 0.01),
             )
             try:
@@ -220,6 +222,7 @@ class Tutoring:
         image: bytes | None,
         practice_answers: bool = False,
         handwriting: bool = False,
+        known_lines: list[str | None] | None = None,
     ) -> AsyncIterator[Event]:
         if intent == "ask" and (convo.exercise is None or image is not None):
             intent = "new_exercise"
@@ -245,7 +248,7 @@ class Tutoring:
             async for event in self._practice(tutor, convo):
                 yield event
         elif intent == "mark":
-            async for event in self._mark(tutor, convo, image):
+            async for event in self._mark(tutor, convo, image, known_lines):
                 yield event
 
     async def _new_exercise(
@@ -392,35 +395,55 @@ class Tutoring:
         return result if result.decided and result.verdict else None
 
     async def _mark(
-        self, tutor: Tutor, convo: Conversation, image: bytes | None
+        self,
+        tutor: Tutor,
+        convo: Conversation,
+        image: bytes | None,
+        known_lines: list[str | None] | None,
     ) -> AsyncIterator[Event]:
         """Live marks for the writing pad (AC-019.6): read the pad, mark each line, no chat turn.
 
-        Like ipad-tutor, the deterministic checker owns the marks; there is no explanation
-        call, so a mark costs one model call (the reading).
+        As in ipad-tutor, the pad sends one slot per written line: the text of lines it has
+        already had read, and None for new or changed lines, whose crops come stacked in
+        `image`. Only those are read, with a short prompt and no conversation, so a mark
+        costs at most one small model call, and none after an undo. The deterministic
+        checker owns the marks.
         """
         if convo.exercise is None:
             yield _notice("no_exercise", "Send the exercise first, then write your working.")
             return
-        if image is None:
+        slots: list[str | None] = [None] if known_lines is None else known_lines
+        unread = slots.count(None)
+        if unread and image is None:
             yield _notice("no_writing", "Write something on the pad first.")
             return
-        reading = await self._structured(
-            self.messages(tutor, convo, READ_HANDWRITING, image), HandwritingReading
-        )
-        lines = [line.strip() for line in (reading.text if reading else "").splitlines()]
-        lines = [line for line in lines if line]
-        if reading is None or not reading.readable or not lines:
-            yield {"type": "marks", "readable": False, "lines": [], "verdict": None}
-            return
-        decision = None
-        if tutor.config.checker == "maths":
-            decision = await check_attempt(
-                convo.exercise.text, convo.exercise.typed, "\n".join(lines)
+        readable = True
+        lines = [slot or "" for slot in slots]
+        if unread:
+            reading = await self._structured(
+                _reading_messages(image), HandwritingReading, _reading_tokens(unread)
             )
-        marks = _line_marks(lines, decision)
+            read = [line.strip() for line in (reading.text if reading else "").splitlines()]
+            read = [line for line in read if line]
+            readable = bool(reading and reading.readable and read)
+            if known_lines is None:
+                lines = read if readable else []
+            else:
+                lines = _fill_slots(slots, read if readable else [])
+        written = [line for line in lines if line]
+        decision = None
+        if written and tutor.config.checker == "maths":
+            decision = await check_attempt(
+                convo.exercise.text, convo.exercise.typed, "\n".join(written)
+            )
+        marks = iter(_line_marks(written, decision))
         verdict = decision.verdict if decision and decision.decided else None
-        yield {"type": "marks", "readable": True, "lines": marks, "verdict": verdict}
+        yield {
+            "type": "marks",
+            "readable": readable,
+            "lines": [next(marks) if line else {"text": "", "mark": "unknown"} for line in lines],
+            "verdict": verdict,
+        }
 
     async def _practice(self, tutor: Tutor, convo: Conversation) -> AsyncIterator[Event]:
         if convo.exercise is None:
@@ -479,6 +502,31 @@ _FALLBACK_EXPLANATION = {
 
 def _squash(value: str) -> str:
     return re.sub(r"\s+", "", value).lower()
+
+
+def _reading_messages(image: bytes | None) -> list[Message]:
+    """Just the reading prompt and the crops: no tutor prompt or history to slow it down."""
+    return [
+        {"role": "system", "content": READ_HANDWRITING},
+        {"role": "user", "content": "Copy the writing in the image.", "images": [image]},
+    ]
+
+
+def _reading_tokens(lines: int) -> int:
+    return min(MAX_TOKENS["structured"], 40 + 60 * lines)
+
+
+def _fill_slots(slots: list[str | None], read: list[str]) -> list[str]:
+    """Put the read lines into the unread slots, top to bottom.
+
+    A crop the model reads as more lines than were sent goes to the last unread slot, so a
+    tall line or a fraction is not lost; fewer lines leave the remaining slots empty.
+    """
+    unread = slots.count(None)
+    if len(read) > unread:
+        read = [*read[: unread - 1], " ".join(read[unread - 1 :])]
+    texts = iter(read)
+    return [slot if slot is not None else next(texts, "") for slot in slots]
 
 
 def _line_marks(lines: list[str], decision: CheckResult | None) -> list[dict[str, str]]:

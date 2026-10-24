@@ -1,6 +1,7 @@
 import json
 import time
 
+import pytest
 from fastapi.testclient import TestClient
 from starlette.formparsers import MultiPartParser
 
@@ -480,3 +481,97 @@ def test_ac_019_6_live_marks_leave_the_conversation_alone(
     got = events(send(client, intent="check", text="x = 4"))
     assert next(e for e in got if e["type"] == "state")["exercise"] == "2x + 3 = 11"
     assert next(e for e in got if e["type"] == "verdict")["verdict"] == "correct"
+
+
+def mark_lines(client: TestClient, slots: list, image: bool = True):  # type: ignore[no-untyped-def,type-arg]
+    files = {"image": ("pad.png", photo_bytes(fmt="PNG"), "image/png")} if image else None
+    data = {"intent": "mark", "handwriting": "1", "lines": json.dumps(slots)}
+    return client.post("/api/messages", data=data, files=files)
+
+
+def test_ac_019_6_only_new_lines_are_read_with_a_short_prompt(
+    client: TestClient, fake: FakeModel
+) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    calls_before = len(fake.calls)
+    fake.structured_replies["HandwritingReading"] = [
+        json.dumps({"readable": True, "text": "x = 5"})
+    ]
+    got = events(mark_lines(client, ["2x = 8", None]))
+    marks = next(e for e in got if e["type"] == "marks")
+    assert [(line["text"], line["mark"]) for line in marks["lines"]] == [
+        ("2x = 8", "correct"),
+        ("x = 5", "wrong"),
+    ]
+    assert len(fake.calls) == calls_before + 1  # one reading call
+    reading_call = fake.calls[-1]
+    assert len(reading_call) == 2  # no tutor prompt, exercise or chat history
+    assert "images" in reading_call[-1]
+
+
+def test_ac_019_6_known_lines_are_marked_without_a_model_call(
+    client: TestClient, fake: FakeModel
+) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    calls_before = len(fake.calls)
+    got = events(mark_lines(client, ["2x = 8", "", "x = 4"], image=False))
+    marks = next(e for e in got if e["type"] == "marks")
+    assert [line["mark"] for line in marks["lines"]] == ["correct", "unknown", "correct"]
+    assert marks["lines"][1]["text"] == ""  # one slot per pad line, so marks stay aligned
+    assert marks["verdict"] == "correct"
+    assert len(fake.calls) == calls_before
+
+
+def test_ac_019_6_unreadable_new_line_keeps_the_known_marks(
+    client: TestClient, fake: FakeModel
+) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    fake.structured_replies["HandwritingReading"] = [json.dumps({"readable": False, "text": ""})]
+    got = events(mark_lines(client, ["2x = 8", None]))
+    marks = next(e for e in got if e["type"] == "marks")
+    assert marks["readable"] is False
+    assert [line["text"] for line in marks["lines"]] == ["2x = 8", ""]
+
+
+def test_ac_019_6_unknown_lines_need_the_crops(client: TestClient) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    got = events(mark_lines(client, ["2x = 8", None], image=False))
+    assert any(e.get("code") == "no_writing" for e in got)
+
+
+@pytest.mark.parametrize(
+    "lines",
+    [
+        "not json",
+        json.dumps({"a": 1}),
+        json.dumps([1]),
+        json.dumps(["x" * 201]),
+        json.dumps([""] * 31),
+    ],
+)
+def test_bad_pad_lines_are_refused(client: TestClient, lines: str) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    data = {"intent": "mark", "handwriting": "1", "lines": lines}
+    assert client.post("/api/messages", data=data).status_code == 400
+
+
+def test_fill_slots_keeps_extra_read_lines_on_the_last_new_line() -> None:
+    from opentutor.tutoring import _fill_slots
+
+    assert _fill_slots(["a", None, None], ["b"]) == ["a", "b", ""]
+    assert _fill_slots([None, "c", None], ["a", "b", "d"]) == ["a", "c", "b d"]
+
+
+def test_pad_lines_longer_than_a_message_are_refused(
+    client: TestClient, settings: Settings
+) -> None:
+    join(client)
+    send(client, text="2x + 3 = 11")
+    slots = ["x" * 200] * (settings.max_message_chars // 200 + 1)
+    data = {"intent": "mark", "handwriting": "1", "lines": json.dumps(slots[:30])}
+    assert client.post("/api/messages", data=data).status_code == 400
