@@ -4,7 +4,16 @@ version = "0.1.0"
 description = "Offline AI homework tutor hub: one laptop running Gemma 4 serves a classroom of phones over local Wi-Fi, zero data"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "fastapi>=0.162.0",
+    "jinja2>=3.1.6",
+    "ollama>=0.6.3",
+    "pillow>=13.0.0",
+    "pydantic-settings>=2.16.1",
+    "python-multipart>=0.0.32",
+    "segno>=1.6.6",
+    "uvicorn[standard]>=0.54.0",
+]
 
 [dependency-groups]
 dev = [
@@ -13,7 +22,11 @@ dev = [
   "ruff>=0.6",
   "mypy>=1.11",
   "pip-audit>=2.7",
+  "httpx>=0.28.1",
 ]
+
+[project.scripts]
+opentutor = "opentutor.cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -26,6 +39,7 @@ packages = ["src/opentutor"]
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
+extend-exclude = ["tutor-ipad"]  # separate product with its own toolchain
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "S", "SIM", "RUF", "N", "C4", "PT", "RET", "ARG"]
@@ -49,3 +63,4 @@ branch = true
 
 [tool.coverage.report]
 show_missing = true
+fail_under = 80

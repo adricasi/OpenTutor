@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block main %}
+<h1>Homework help, no data needed</h1>
+<form method="post" action="/session" class="card">
+  <label for="nickname">Choose a nickname</label>
+  <input id="nickname" name="nickname" maxlength="20" autocomplete="off" required value="{{ nickname or '' }}"
+         aria-describedby="nickname-help{% if error %} nickname-error{% endif %}">
+  <p id="nickname-help" class="help">1–20 letters, digits, spaces, - or _. Don't use your full name.</p>
+  {% if error %}<p id="nickname-error" class="error" role="alert">{{ error }}</p>{% endif %}
+  <button type="submit">Start</button>
+</form>
+{% endblock %}
