@@ -88,7 +88,16 @@ def student_block(text: str) -> str:
 
 
 class Tutoring:
-    def __init__(self, model: ModelClient, prompts_dir: Path, limits: Limits) -> None:
+    def __init__(
+        self,
+        model: ModelClient,
+        prompts_dir: Path,
+        limits: Limits,
+        checker_fallback: bool = False,
+    ) -> None:
+        # checker_fallback: show the maths checker's verdict even if the model can't explain
+        # it (the web app); off for `opentutor eval` so model failures are still recorded.
+        self.checker_fallback = checker_fallback
         self.model = model
         self.core = (prompts_dir / "core.md").read_text()
         self.limits = limits
@@ -136,10 +145,11 @@ class Tutoring:
 
     async def _structured[T: BaseModel](self, msgs: list[Message], schema: type[T]) -> T | None:
         """Ask for JSON matching `schema`; retry once with the validation error (AC-006.4)."""
+        deadline = time.monotonic() + self.limits.call_s  # one budget for both attempts
         for _attempt in range(2):
             raw = await asyncio.wait_for(
                 self.model.structured(msgs, schema, MAX_TOKENS["structured"]),
-                timeout=self.limits.call_s,
+                timeout=max(deadline - time.monotonic(), 0.01),
             )
             try:
                 return schema.model_validate_json(raw)
@@ -170,6 +180,10 @@ class Tutoring:
             yield {"type": "token", "text": chunk}
         convo.turns.append(Turn("student", shown if shown is not None else student_text))
         convo.turns.append(Turn("tutor", "".join(reply).strip()))
+        if level <= 3:
+            convo.hint_level = (
+                level  # only once the reply arrived, so a failure doesn't skip a step
+            )
         if level == 4:
             yield {"type": "notice", "code": "mistakes_reminder", "message": MISTAKES_REMINDER}
 
@@ -187,7 +201,13 @@ class Tutoring:
         return topic if topic in tutor.config.topics else "other"
 
     async def handle(
-        self, tutor: Tutor, convo: Conversation, intent: Intent, text: str, image: bytes | None
+        self,
+        tutor: Tutor,
+        convo: Conversation,
+        intent: Intent,
+        text: str,
+        image: bytes | None,
+        practice_answers: bool = False,
     ) -> AsyncIterator[Event]:
         if intent == "ask" and (convo.exercise is None or image is not None):
             intent = "new_exercise"
@@ -199,12 +219,13 @@ class Tutoring:
                 yield _notice("no_exercise", "Send the exercise first: a photo or typed question.")
                 return
             if intent == "hint":
-                convo.hint_level = min(max(convo.hint_level, 1) + 1, 3)
-            level = 4 if intent == "answer" else max(convo.hint_level, 1)
+                level = min(max(convo.hint_level, 1) + 1, 3)
+            else:
+                level = 4 if intent == "answer" else max(convo.hint_level, 1)
             async for event in self._tutor_reply(tutor, convo, text, level, image):
                 yield event
         elif intent == "check":
-            async for event in self._check(tutor, convo, text, image):
+            async for event in self._check(tutor, convo, text, image, practice_answers):
                 yield event
         elif intent == "practice":
             async for event in self._practice(tutor, convo):
@@ -213,10 +234,10 @@ class Tutoring:
     async def _new_exercise(
         self, tutor: Tutor, convo: Conversation, text: str, image: bytes | None
     ) -> AsyncIterator[Event]:
-        convo.turns.clear()
-        convo.practice.clear()
-        convo.hint_level = 1
         if image is None:
+            convo.turns.clear()
+            convo.practice.clear()
+            convo.hint_level = 0
             convo.exercise = Exercise(text=text)
             async for event in self._tutor_reply(tutor, convo, "", 1, None, shown=text):
                 yield event
@@ -231,7 +252,7 @@ class Tutoring:
             self.messages(tutor, Conversation(tutor.id), request, image), ExerciseAnalysis
         )
         if analysis is None or not analysis.readable or analysis.exercise_count == 0:
-            convo.exercise = None
+            # Keep the previous exercise and conversation: a bad photo shouldn't wipe them.
             yield _notice(
                 "unreadable_image",
                 "I can't read an exercise in this photo. Try again with the page flat, in good "
@@ -239,11 +260,13 @@ class Tutoring:
             )
             return
         topic = analysis.topic if analysis.topic in tutor.config.topics else "other"
+        convo.turns.clear()
+        convo.practice.clear()
+        convo.hint_level = 0
         convo.exercise = Exercise(
             text=analysis.exercise_text, image=image, topic=topic, typed=False
         )
         if analysis.exercise_count > 1:
-            convo.hint_level = 0
             yield _notice(
                 "several_exercises",
                 "I can see several exercises in this photo. Which one do you want help with?",
@@ -254,12 +277,19 @@ class Tutoring:
             yield event
 
     async def _check(
-        self, tutor: Tutor, convo: Conversation, text: str, image: bytes | None
+        self,
+        tutor: Tutor,
+        convo: Conversation,
+        text: str,
+        image: bytes | None,
+        practice_answers: bool = False,
     ) -> AsyncIterator[Event]:
         if convo.exercise is None:
             yield _notice("no_exercise", "Which exercise is this answer for? Send it first.")
             return
-        answers = _practice_answers(text, convo.practice) if image is None else {}
+        # Only answers sent from the practice panel count as practice answers, so a student's
+        # own numbered working ("1. 2x = 8") is still checked against the main exercise.
+        answers = _practice_answers(text, convo.practice) if practice_answers and not image else {}
         if answers:
             # One verdict per practice answer, each checked against its own exercise (AC-007.2).
             main = convo.exercise
@@ -294,7 +324,17 @@ class Tutoring:
         )
         if decision:
             request = _explain_request(decision, text)
-        verdict = await self._structured(self.messages(tutor, convo, request, image), Verdict)
+        try:
+            verdict = await self._structured(self.messages(tutor, convo, request, image), Verdict)
+        except (ModelError, TimeoutError):
+            if not (decision and self.checker_fallback):
+                raise
+            verdict = None
+        if verdict is None and decision and decision.verdict and self.checker_fallback:
+            # The checker already knows; don't hide its verdict because the explanation failed.
+            verdict = Verdict(
+                verdict=decision.verdict, explanation=_FALLBACK_EXPLANATION[decision.verdict]
+            )
         if verdict is None:
             return None
         if decision and decision.verdict:
@@ -302,7 +342,12 @@ class Tutoring:
             verdict.verdict = decision.verdict
             verdict.first_error_step = decision.first_error_step
         convo.turns.append(Turn("student", f"My answer: {text or '(photo)'}"))
-        convo.turns.append(Turn("tutor", f"{verdict.verdict}: {verdict.explanation}"))
+        lines = [verdict.explanation]
+        if verdict.first_error_step:
+            lines.append(f"First step to fix: {verdict.first_error_step}")
+        if verdict.hint:
+            lines.append(f"Hint: {verdict.hint}")
+        convo.turns.append(Turn("tutor", "\n".join(lines), verdict=verdict.verdict))
         return verdict
 
     async def _maths_decision(
@@ -328,10 +373,12 @@ class Tutoring:
                 "practice_failed", "Practice isn't available for this exercise right now."
             )
             return
+        # Renumber 1..3 ourselves: the model's numbers can't be trusted to match.
         convo.practice = [e.text for e in sorted(practice.exercises, key=lambda e: e.number)]
         listing = "\n".join(f"{i}. {text}" for i, text in enumerate(convo.practice, start=1))
         convo.turns.append(Turn("tutor", "Practice exercises:\n" + listing))
-        yield {"type": "practice", "exercises": [e.model_dump() for e in practice.exercises]}
+        numbered = [{"number": i, "text": text} for i, text in enumerate(convo.practice, start=1)]
+        yield {"type": "practice", "exercises": numbered}
 
 
 def _explain_request(decision: CheckResult, attempt: str) -> str:
@@ -358,6 +405,13 @@ def _explain_request(decision: CheckResult, attempt: str) -> str:
         "Write a short explanation and a hint that agree with this verdict; set the verdict "
         'field to "' + str(decision.verdict) + '".\nAttempt:\n' + student_block(attempt)
     )
+
+
+_FALLBACK_EXPLANATION = {
+    "correct": "That's right. Well done!",
+    "partly_correct": "Your steps are right so far. Keep going to reach the answer.",
+    "not_yet_correct": "Look again at the step shown below. Something went wrong there.",
+}
 
 
 def _practice_answers(text: str, practice: list[str]) -> dict[int, str]:

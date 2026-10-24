@@ -9,7 +9,7 @@ import logging
 import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable, Coroutine
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Form, HTTPException, Request, UploadFile
@@ -160,9 +160,20 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             call_s=settings.call_timeout_s,
             turns_kept=settings.turns_kept,
         ),
+        checker_fallback=True,  # show the maths checker's verdict even if the model fails
     )
     templates = Jinja2Templates(directory=PACKAGE_DIR / "web" / "templates")
     templates.env.globals["subject_look"] = subject_look
+    templates.env.globals["verdict_icons"] = {
+        "correct": "circle-check",
+        "partly_correct": "circle-alert",
+        "not_yet_correct": "circle-x",
+    }
+    templates.env.globals["verdict_labels"] = {
+        "correct": "Correct",
+        "partly_correct": "Partly correct",
+        "not_yet_correct": "Not yet correct",
+    }
     insights, teacher = Insights(), TeacherGate()
 
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -282,6 +293,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         request: Request,
         intent: Annotated[str, Form()] = "ask",
         text: Annotated[str, Form()] = "",
+        practice: Annotated[str, Form()] = "",
         image: UploadFile | None = None,
     ) -> Response:
         session = current(request)
@@ -312,7 +324,15 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             raise HTTPException(409, "Please wait for the current answer")
         session.in_flight_since = now  # set before streaming, so a second request gets 409
         tutor = tutors[session.conversation.tutor_id]
-        stream = run_request(session, tutor, intent, text, photo)  # type: ignore[arg-type]
+        stream = run_request(
+            session,
+            tutor,
+            cast(Intent, intent),
+            text,
+            photo,
+            now,
+            practice == "1",
+        )
         return StreamingResponse(stream, media_type="application/x-ndjson")
 
     background: set[asyncio.Task[None]] = set()
@@ -338,8 +358,26 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             log.info(json.dumps({"background": "classify_topic", "error": type(error).__name__}))
         insights.exercise(tutor.id, topic)
 
+    def state_line(convo: Conversation) -> bytes:
+        """The real tutoring state, so the page's hint ladder and exercise panel match it."""
+        exercise = convo.exercise.text if convo.exercise else None
+        return _line(
+            {
+                "type": "state",
+                "hint_level": convo.hint_level,
+                "exercise": exercise,
+                "practice": len(convo.practice),
+            }
+        )
+
     async def run_request(
-        session: Session, tutor: Tutor, intent: Intent, text: str, photo: bytes | None
+        session: Session,
+        tutor: Tutor,
+        intent: Intent,
+        text: str,
+        photo: bytes | None,
+        accepted_at: float,
+        practice_answers: bool,
     ) -> AsyncIterator[bytes]:
         convo = session.conversation
         if convo is None:
@@ -367,7 +405,8 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             record["queue_s"] = round(time.monotonic() - start, 2)
             try:
                 yield _line({"type": "started"})
-                async for event in tutoring.handle(tutor, convo, intent, text, photo):
+                events = tutoring.handle(tutor, convo, intent, text, photo, practice_answers)
+                async for event in events:
                     if "first_token_s" not in record and event["type"] == "token":
                         record["first_token_s"] = round(time.monotonic() - start, 2)
                     if event["type"] == "verdict" and convo.exercise:
@@ -381,17 +420,26 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
                         insights.exercise(tutor.id, new_exercise.topic)
                 if intent == "hint":
                     insights.hint(tutor.id)
+                yield state_line(convo)
                 yield _line({"type": "done"})
                 record["outcome"] = "ok"
-            except (ModelError, TimeoutError) as error:
-                record["outcome"], record["error"] = "model_error", type(error).__name__
+            except Exception as error:  # every failure must end the stream cleanly
+                # ModelError/TimeoutError are expected; anything else is logged as a bug but the
+                # student still gets a retryable message instead of a broken stream (AC-003.3).
+                expected = isinstance(error, ModelError | TimeoutError)
+                record["outcome"] = "model_error" if expected else "server_error"
+                record["error"] = type(error).__name__
+                if not expected:
+                    log.exception("unexpected error while answering")
+                yield state_line(convo)
                 yield _line(
                     _error("model_timeout", "Something went wrong, please try again.", True)
                 )
             finally:
                 queue.release()
         finally:
-            session.in_flight_since = None
+            if session.in_flight_since == accepted_at:  # don't clear a newer request's flag
+                session.in_flight_since = None
             record["total_s"] = round(time.monotonic() - start, 2)
             log.info(json.dumps(record))
 

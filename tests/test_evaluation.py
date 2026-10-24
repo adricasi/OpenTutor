@@ -342,8 +342,9 @@ def test_wrong_verdicts_lower_accuracy_and_answer_reveals_are_reported() -> None
 def test_model_failure_is_recorded_as_failed_case() -> None:
     model = FakeModel()
     model.structured_replies["JudgeVerdict"] = [JUDGE_PASS] * 2
-    # no Verdict queued: the fake raises ModelError, which Tutoring does not catch
-    result = run(model, one_case())
+    # no Verdict queued: the fake raises ModelError, which Tutoring does not catch.
+    # Science has no maths checker that could still decide the verdict.
+    result = run(model, load_cases(EVALS_DIR, "science")[0], tutor_id="science")
     case = result.cases[0]
     assert case.error
     assert "ModelError" in case.error

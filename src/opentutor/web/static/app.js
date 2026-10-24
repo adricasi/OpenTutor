@@ -9,7 +9,12 @@
     if (finish && typeof finish.showModal === "function") finish.showModal();
     else if (window.confirm("Everything will be deleted. This cannot be undone.")) finish.querySelector("form").submit();
   }));
-  document.querySelectorAll("[data-close-finish]").forEach((button) => button.addEventListener("click", () => finish.close()));
+  const newDialog = document.getElementById("new-dialog");
+  document.querySelectorAll("[data-open-new]").forEach((button) => button.addEventListener("click", () => {
+    if (typeof newDialog.showModal === "function") newDialog.showModal();
+    else if (window.confirm("Start a new exercise? This conversation will be cleared.")) newDialog.querySelector("form").submit();
+  }));
+  document.querySelectorAll("[data-close-dialog]").forEach((button) => button.addEventListener("click", () => button.closest("dialog").close()));
 
   const form = document.getElementById("ask");
   if (!form) return;
@@ -24,6 +29,11 @@
   const practiceBox = document.getElementById("practice");
   const ladder = document.getElementById("ladder");
   const desk = document.getElementById("desk");
+  const announcer = document.getElementById("announce");
+  const hintLine = document.getElementById("hint-line");
+  const checkChip = document.getElementById("check-chip");
+  const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  let lastRequest = null;
   const nickname = form.dataset.nickname;
   const VERDICTS = { correct: "Correct", partly_correct: "Partly correct", not_yet_correct: "Not yet correct" };
   let hintLevel = Number(form.dataset.hintLevel || 0);
@@ -64,7 +74,6 @@
 
     function label(button, speaking) {
       button.replaceChildren(iconFrom(speaking ? "tpl-stop" : "tpl-volume"), document.createTextNode(speaking ? "Stop" : "Read aloud"));
-      button.setAttribute("aria-pressed", speaking ? "true" : "false");
     }
 
     function toggle(button, value) {
@@ -101,7 +110,17 @@
     return { attach };
   })();
 
-  function scrollDown() { log.scrollTop = log.scrollHeight; }
+  function scrollDown() {
+    log.scrollTop = log.scrollHeight;
+    const last = log.lastElementChild;
+    // On phones the page scrolls, not the log: bring the newest turn into view.
+    if (last && last.getBoundingClientRect().bottom > window.innerHeight) last.scrollIntoView({ block: "nearest" });
+  }
+
+  function announce(message) {
+    announcer.textContent = "";
+    window.setTimeout(() => { announcer.textContent = message; }, 50);
+  }
 
   function clearEmpty() {
     const empty = document.getElementById("empty");
@@ -128,7 +147,7 @@
     if (options && options.verdict) {
       const verdict = document.createElement("div");
       verdict.className = "ot-verdict " + options.verdict;
-      verdict.appendChild(iconFrom("tpl-verdict"));
+      verdict.appendChild(iconFrom("tpl-" + options.verdict));
       verdict.appendChild(document.createTextNode((options.prefix || "") + VERDICTS[options.verdict]));
       body.appendChild(verdict);
     }
@@ -150,33 +169,60 @@
     return p;
   }
 
-  function notice(message) {
+  function notice(message, retry) {
     clearEmpty();
+    const lastBox = log.lastElementChild;
+    if (!retry && lastBox && lastBox.classList.contains("ot-notice") && lastBox.textContent === message) return;
     const box = document.createElement("div");
     box.className = "ot-notice";
     box.setAttribute("role", "status");
     const p = document.createElement("p");
     p.textContent = message;
     box.appendChild(p);
+    if (retry) {
+      const again = document.createElement("button");
+      again.type = "button";
+      again.className = "btn btn-outline";
+      again.textContent = "Try again";
+      again.addEventListener("click", () => { if (!busyNow) { box.remove(); retry(); } });
+      box.appendChild(again);
+    }
     log.appendChild(box);
+    announce(message);
     scrollDown();
   }
 
   function setLadder(level) {
     hintLevel = level;
     if (!ladder) return;
-    ladder.querySelectorAll("li").forEach((li) => li.classList.toggle("done", Number(li.dataset.level) <= level));
+    let current = "";
+    ladder.querySelectorAll("li").forEach((li) => {
+      const done = Number(li.dataset.level) <= level;
+      li.classList.toggle("done", done);
+      li.querySelector(".ladder-done").textContent = done ? " (done)" : "";
+      if (done) current = li.dataset.label;
+    });
+    hintLine.textContent = level > 0 ? "Hint " + Math.min(level, 4) + " of 4: " + current : "";
+  }
+
+  function updateActions() {
+    const ready = hasExercise();
+    document.querySelectorAll("#actions [data-intent]").forEach((b) => b.setAttribute("aria-disabled", ready && !busyNow ? "false" : "true"));
   }
 
   function setDesk(value) {
     if (!desk) return;
     desk.hidden = !value;
     document.getElementById("desk-text").textContent = value;
+    updateActions();
   }
 
   function busy(on) {
+    // aria-disabled instead of disabled: the focused button keeps focus during the request.
     busyNow = on;
-    document.querySelectorAll("#actions button, #ask button, #practice button").forEach((b) => { b.disabled = on; });
+    document.querySelectorAll("#ask button, #practice button, [data-example]").forEach((b) => b.setAttribute("aria-disabled", on ? "true" : "false"));
+    log.setAttribute("aria-busy", on ? "true" : "false");
+    updateActions();
   }
 
   function queueMessage(position) {
@@ -190,6 +236,7 @@
   function setChecking(on) {
     checking = on;
     text.placeholder = on ? "Write your answer or working…" : "What are you working on?";
+    checkChip.hidden = !on;
   }
 
   // Downscale photos on the phone before upload: faster on hub Wi-Fi, still readable.
@@ -216,6 +263,7 @@
     document.getElementById("photo-thumb").src = photo.url;
     document.getElementById("photo-name").textContent = file.name || "Photo";
     preview.hidden = false;
+    announce("Photo added. Tap send when you’re ready.");
   }
 
   function clearPhoto() {
@@ -223,14 +271,21 @@
     preview.hidden = true;
   }
 
+  function restorePhoto(file) {
+    photo = { file: file, url: URL.createObjectURL(file) };
+    document.getElementById("photo-thumb").src = photo.url;
+    document.getElementById("photo-name").textContent = file.name || "Photo";
+    preview.hidden = false;
+  }
+
   function renderPractice(exercises) {
     practiceBox.replaceChildren();
     const title = document.createElement("div");
     title.className = "ot-section-title";
     const h2 = document.createElement("h2");
-    h2.textContent = "Your turn × 3";
+    h2.textContent = "Practice: 3 to try";
     const kicker = document.createElement("span");
-    kicker.textContent = "SAME IDEA, NEW CHALLENGE";
+    kicker.textContent = "Same idea, new numbers";
     title.append(h2, kicker);
     practiceBox.appendChild(title);
     exercises.forEach((exercise) => {
@@ -258,7 +313,7 @@
       answerForm.addEventListener("submit", (e) => {
         e.preventDefault();
         if (!input.value.trim() || busyNow) return;
-        send("check", exercise.number + ". " + input.value.trim(), null);
+        send("check", exercise.number + ". " + input.value.trim(), null, { practice: true });
       });
       const result = document.createElement("small");
       body.append(strong, answerForm, result);
@@ -275,23 +330,37 @@
     item.querySelector("small").textContent = verdict === "correct" ? "Correct. Nice work!" : "Not yet. Try again — you’ve got this.";
   }
 
-  async function send(intent, message, file) {
+  const HTTP_MESSAGES = {
+    401: "Your session has ended. Go back to the start page to join again.",
+    409: "Please wait for the current answer first.",
+    413: "That photo is too big. Send a JPEG, PNG or WebP photo under 10 MB.",
+  };
+
+  async function send(intent, message, file, options) {
+    if (busyNow) return;
+    busy(true);
+    const practice = options && options.practice;
+    lastRequest = { intent: intent, message: message, file: file, options: options };
     const data = new FormData();
     data.append("intent", intent);
     data.append("text", message);
-    if (file) data.append("image", await shrink(file), "photo.jpg");
-    if (message) turn("student", (intent === "check" ? "My answer: " : "") + message, file ? { image: photo.url } : null);
-    else if (file) turn("student", "", { image: photo.url });
-    const newExercise = (intent === "ask" && (hintLevel === 0 || file)) || intent === "new_exercise";
-    busy(true);
+    if (practice) data.append("practice", "1");
+    const imageUrl = file ? URL.createObjectURL(file) : null;
+    if (message) turn("student", (intent === "check" && !practice ? "My answer: " : "") + message, imageUrl ? { image: imageUrl } : null);
+    else if (file) turn("student", "", { image: imageUrl });
+    let state = null;
+    let failed = false;
     status.replaceChildren();
     let reply = null;
     let ok = false;
     try {
+      if (file) data.append("image", await shrink(file), "photo.jpg");
       const res = await fetch("/api/messages", { method: "POST", body: data });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        notice(body.detail || "Something went wrong, please try again.");
+        failed = res.status !== 401 && res.status !== 400;
+        notice(HTTP_MESSAGES[res.status] || body.detail || "Something went wrong, please try again.");
+        if (res.status === 401) window.setTimeout(() => { window.location.href = "/"; }, 2500);
         return;
       }
       const reader = res.body.getReader();
@@ -308,6 +377,7 @@
           if (!line) continue;
           const ev = JSON.parse(line);
           if (ev.type === "queued") {
+            if (queueBox.hidden) announce(queueMessage(ev.position) + " Your place is saved.");
             queueBox.hidden = false;
             document.getElementById("queue-number").textContent = "#" + ev.position;
             document.getElementById("queue-message").textContent = queueMessage(ev.position);
@@ -328,50 +398,79 @@
           } else if (ev.type === "practice") {
             turn("tutor", "Here are 3 to try. Answer them below — I’ll check each one.");
             renderPractice(ev.exercises);
-          } else if (ev.type === "notice" || ev.type === "error") {
+          } else if (ev.type === "notice") {
             notice(ev.message);
+          } else if (ev.type === "error") {
+            failed = !!ev.retryable;
+            if (!failed) notice(ev.message);
+          } else if (ev.type === "state") {
+            state = ev;
           } else if (ev.type === "done") {
             ok = true;
           }
         }
       }
     } catch (e) {
-      notice("Connection lost. Check you’re on the hub Wi-Fi and try again.");
+      failed = true;
     } finally {
       if (reply) speech.attach(reply);
       queueBox.hidden = true;
       status.replaceChildren();
       busy(false);
-      if (ok) {
-        if (newExercise) { setLadder(1); setDesk(message || "Your photo"); practiceBox.hidden = true; }
-        else if (intent === "hint") setLadder(Math.min(Math.max(hintLevel, 1) + 1, 3));
-        else if (intent === "answer") setLadder(4);
+      if (failed) {
+        // Keep what the student wrote: offer the same request again (AC-003.3).
+        const again = lastRequest;
+        notice("Something went wrong — your message wasn’t lost. Check you’re on the hub Wi-Fi, then try again.",
+          () => send(again.intent, again.message, again.file, again.options));
+      } else if (reply) {
+        announce("Reply ready.");
+      }
+      if (state) {
+        const previous = desk ? document.getElementById("desk-text").textContent : "";
+        if (!state.practice) practiceBox.hidden = true; // the hub cleared practice (new exercise)
+        setLadder(intent === "answer" ? 4 : state.hint_level);
+        setDesk(state.exercise || "");
       }
     }
   }
 
   function submit() {
     const message = text.value.trim();
-    if (!message && !photo) return;
+    if (busyNow || (!message && !photo)) return;
     const intent = checking ? "check" : "ask";
     const file = photo ? photo.file : null;
     text.value = "";
     updateCount();
     setChecking(false);
-    send(intent, message, file).finally(clearPhoto);
+    clearPhoto();
+    send(intent, message, file);
   }
 
   form.addEventListener("submit", (e) => { e.preventDefault(); if (!busyNow) submit(); });
   text.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!busyNow) submit(); }
+    if (e.key === "Enter" && !e.shiftKey && !coarse) { e.preventDefault(); submit(); }
   });
   text.addEventListener("input", updateCount);
   imageInput.addEventListener("change", () => choosePhoto(imageInput));
   cameraInput.addEventListener("change", () => choosePhoto(cameraInput));
-  document.getElementById("photo-remove").addEventListener("click", clearPhoto);
+  document.getElementById("photo-remove").addEventListener("click", () => { clearPhoto(); announce("Photo removed."); });
+  document.querySelectorAll("[data-pick]").forEach((b) => b.addEventListener("click", () => document.getElementById(b.dataset.pick).click()));
+  document.getElementById("check-cancel").addEventListener("click", () => { setChecking(false); text.focus(); });
   document.querySelectorAll("[data-example]").forEach((b) => b.addEventListener("click", () => send("ask", b.dataset.example, null)));
+  function hasExercise() {
+    return desk ? !desk.hidden : hintLevel > 0;
+  }
+
   document.querySelectorAll("[data-intent]").forEach((b) => b.addEventListener("click", () => {
+    if (busyNow) return;
     const intent = b.dataset.intent;
+    if (intent !== "check") setChecking(false); // check mode only lasts until another action
+    if (intent === "check" && !hasExercise()) {
+      // Without an exercise, the next message must start one, not be checked as an answer.
+      notice("First send the exercise — a photo or type it. Then you can check your answer.");
+      text.focus();
+      return;
+    }
     if (intent === "check" && !text.value.trim() && !photo) {
       setChecking(true);
       notice("Write your answer or working below, or add a photo. Then tap send.");
@@ -383,6 +482,10 @@
   }));
 
   document.querySelectorAll(".ot-turn.tutor .ot-turn-text").forEach((p) => speech.attach(p));
+  const savedPractice = JSON.parse(practiceBox.dataset.exercises || "[]");
+  if (savedPractice.length) renderPractice(savedPractice.map((t, i) => ({ number: i + 1, text: t })));
+  setLadder(hintLevel);
+  updateActions();
   if (form.dataset.autofill && !text.value) { text.value = form.dataset.autofill; updateCount(); }
   scrollDown();
 })();

@@ -7,9 +7,9 @@
     <div class="ot-chat-top">
       <div><span class="ot-tutor-symbol" aria-hidden="true">{{ look.short }}</span>
         <div><h1>{{ tutor.config.name }} tutor<span class="ot-live-dot" aria-hidden="true"></span></h1><p>Not the answer. The way to get there.</p></div></div>
-      <form method="post" action="/chat/{{ tutor.id }}/new"><button class="btn btn-ghost" type="submit">{{ icon("plus", 17) }}<span>New exercise</span></button></form>
+      <button class="btn btn-ghost" type="button" data-open-new aria-label="New exercise">{{ icon("plus", 17) }}<span>New exercise</span></button>
     </div>
-    <div class="ot-chat-scroll" id="log" aria-live="polite">
+    <div class="ot-chat-scroll" id="log">
       {% if not convo.turns %}
       <div class="ot-empty-chat" id="empty">
         <span class="ot-big-question" aria-hidden="true">?</span>
@@ -18,21 +18,25 @@
         <p>Type your exercise or share a photo.<br>I’ll help you think, one step at a time.</p>
         {% if tutor.config.examples %}<button class="btn btn-outline" type="button" data-example="{{ tutor.config.examples[0].student }}">{{ tutor.config.examples[0].student }} {{ icon("arrow-up-right", 16) }}</button>{% endif %}
         <div class="ot-photo-choices">
-          <label class="btn btn-ghost" for="camera">{{ icon("camera", 18) }}Take a photo</label>
-          <label class="btn btn-ghost" for="image">{{ icon("image-plus", 18) }}Choose a photo</label>
+          <button class="btn btn-ghost" type="button" data-pick="camera">{{ icon("camera", 18) }}Take a photo</button>
+          <button class="btn btn-ghost" type="button" data-pick="image">{{ icon("image-plus", 18) }}Choose a photo</button>
         </div>
       </div>
       {% endif %}
       {% for turn in convo.turns %}
       <div class="ot-turn {{ turn.role }}">
         {% if turn.role == "tutor" %}<span class="ot-turn-avatar" aria-hidden="true">{{ icon("book-open", 17) }}</span>{% endif %}
-        <div><span class="ot-turn-name">{{ "OpenTutor" if turn.role == "tutor" else session.nickname }}</span><p class="ot-turn-text">{{ turn.text }}</p></div>
+        <div><span class="ot-turn-name">{{ "OpenTutor" if turn.role == "tutor" else session.nickname }}</span>
+          {%- if turn.verdict %}<div class="ot-verdict {{ turn.verdict }}">{{ icon(verdict_icons[turn.verdict], 16) }}{{ verdict_labels[turn.verdict] }}</div>{% endif -%}
+          <p class="ot-turn-text">{{ turn.text }}</p></div>
       </div>
       {% endfor %}
     </div>
-    <p id="status" class="ot-stream-label" role="status"></p>
-    <div class="ot-queue" id="queue" hidden><span class="ot-queue-number" id="queue-number">#1</span><div><strong id="queue-message">You’re next in line.</strong><p>Your place is saved. Everyone gets a turn.</p></div><span class="ot-pulse" aria-hidden="true">•••</span></div>
-    <div id="practice" hidden></div>
+    <p id="status" class="ot-stream-label"></p>
+    <p id="announce" class="sr-only" role="status" aria-live="polite"></p>
+    <div class="ot-queue" id="queue" role="status" hidden><span class="ot-queue-number" id="queue-number">#1</span><div><strong id="queue-message">You’re next in line.</strong><p>Your place is saved. Everyone gets a turn.</p></div><span class="ot-pulse" aria-hidden="true">•••</span></div>
+    <div id="practice" class="ot-practice" data-exercises="{{ convo.practice | tojson | forceescape }}" hidden></div>
+    <p class="ot-hint-line" id="hint-line" aria-hidden="true"></p>
     <div class="ot-actions" id="actions">
       <button class="btn btn-outline" type="button" data-intent="hint">{{ icon("lightbulb", 16) }}Another hint</button>
       <button class="btn btn-ghost" type="button" data-intent="check">{{ icon("check", 16) }}Check my answer</button>
@@ -40,17 +44,20 @@
       <button class="btn btn-ghost" type="button" data-intent="practice">{{ icon("plus", 16) }}Practice</button>
     </div>
     <div class="ot-photo-preview" id="photo-preview" hidden><img id="photo-thumb" alt="Photo ready to send"><span id="photo-name"></span><button class="btn btn-ghost btn-icon" type="button" id="photo-remove" aria-label="Remove photo">{{ icon("x", 18) }}</button></div>
+    <div class="ot-check-chip" id="check-chip" hidden><span>{{ icon("check", 16) }}Checking your answer: type it below, then send.</span><button class="btn btn-ghost" type="button" id="check-cancel">{{ icon("x", 16) }}Cancel</button></div>
     <form id="ask" class="ot-composer" data-tutor="{{ tutor.id }}" data-nickname="{{ session.nickname }}" data-hint-level="{{ convo.hint_level }}"{% if autofill_example and tutor.config.examples %} data-autofill="{{ tutor.config.examples[0].student }}"{% endif %}>
-      <label class="btn btn-ghost btn-icon" for="image" title="Add a photo">{{ icon("image-plus", 20) }}<span class="sr-only">Add a photo</span></label>
+      <button class="btn btn-ghost btn-icon" type="button" data-pick="image" aria-label="Add a photo" title="Add a photo">{{ icon("image-plus", 20) }}</button>
       <label for="text" class="sr-only">Your question or answer</label>
       <textarea id="text" name="text" maxlength="2000" rows="2" placeholder="What are you working on?"></textarea>
       <button class="btn btn-icon" type="submit" aria-label="Send">{{ icon("arrow-up", 20) }}</button>
     </form>
     <div class="ot-composer-foot"><span>AI can make mistakes. Check with your teacher.</span><span id="count">0 / 2,000</span></div>
-    <input id="image" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" tabindex="-1">
-    <input id="camera" type="file" accept="image/*" capture="environment" class="sr-only" tabindex="-1">
+    <input id="image" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" tabindex="-1" aria-label="Choose a photo">
+    <input id="camera" type="file" accept="image/*" capture="environment" class="sr-only" tabindex="-1" aria-label="Take a photo">
     <template id="tpl-avatar">{{ icon("book-open", 17) }}</template>
-    <template id="tpl-verdict">{{ icon("circle-check", 16) }}</template>
+    <template id="tpl-correct">{{ icon("circle-check", 16) }}</template>
+    <template id="tpl-partly_correct">{{ icon("circle-alert", 16) }}</template>
+    <template id="tpl-not_yet_correct">{{ icon("circle-x", 16) }}</template>
     <template id="tpl-volume">{{ icon("volume-2", 16) }}</template>
     <template id="tpl-stop">{{ icon("square", 16) }}</template>
     <template id="tpl-check">{{ icon("check", 18) }}</template>
@@ -60,12 +67,21 @@
     <h2>Aha!<br>Not just<br><span>an answer.</span></h2>
     <ol class="ot-hint-ladder" id="ladder">
       {% for label in ["A nudge", "The method", "The next step", "The answer"] %}
-      <li data-level="{{ loop.index }}" class="{{ 'done' if convo.hint_level >= loop.index }}"><span>{{ loop.index }}</span>{{ label }}</li>
+      <li data-level="{{ loop.index }}" data-label="{{ label }}" class="{{ 'done' if convo.hint_level >= loop.index }}"><span aria-hidden="true">{{ loop.index }}</span>{{ label }}<span class="sr-only ladder-done">{{ " (done)" if convo.hint_level >= loop.index }}</span></li>
       {% endfor %}
     </ol>
     <p class="ot-aside-note">The answer is yours to ask for.<br>The thinking is yours to keep.</p>
-    <div class="ot-current-exercise" id="desk"{% if not convo.exercise %} hidden{% endif %}><span>ON YOUR DESK</span><p id="desk-text">{{ convo.exercise.text if convo.exercise else "" }}</p></div>
+    <div class="ot-current-exercise" id="desk"{% if not convo.exercise %} hidden{% endif %}><span>YOUR EXERCISE</span><p id="desk-text">{{ convo.exercise.text if convo.exercise else "" }}</p></div>
     <p class="ot-aside-privacy">{{ icon("shield-check", 16) }}Deleted when you tap Finish.</p>
   </aside>
 </div>
+<dialog class="ot-dialog" id="new-dialog" aria-labelledby="new-title">
+  {{ icon("plus", 30) }}
+  <h2 id="new-title">Start a new exercise?</h2>
+  <p>This conversation will be cleared. You can’t get it back.</p>
+  <form method="post" action="/chat/{{ tutor.id }}/new" class="ot-dialog-actions">
+    <button class="btn btn-outline" type="button" data-close-dialog>Keep this one</button>
+    <button class="btn" type="submit">Start new</button>
+  </form>
+</dialog>
 {% endblock %}

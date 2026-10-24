@@ -26,9 +26,9 @@
 <span class="ot-page-kicker">A little insight. A better next lesson.</span>
 <div class="ot-title-row"><div><h1>The classroom,<br><span class="ot-muted-title">in perspective.</span></h1><p>Anonymous totals since the hub started.</p></div></div>
 <div class="ot-stat-strip">
-  <div><span>QUESTIONS EXPLORED</span><strong>{{ totals.questions }}<small>↗</small></strong></div>
-  <div><span>HINTS REQUESTED</span><strong>{{ totals.hints }}<small>✳</small></strong></div>
-  <div><span>ATTEMPTS CHECKED</span><strong>{{ totals.checked }}<small>✓</small></strong></div>
+  <div><span>QUESTIONS EXPLORED</span><strong>{{ totals.questions }}<small aria-hidden="true">↗</small></strong></div>
+  <div><span>HINTS REQUESTED</span><strong>{{ totals.hints }}<small aria-hidden="true">✳</small></strong></div>
+  <div><span>ATTEMPTS CHECKED</span><strong>{{ totals.checked }}<small aria-hidden="true">✓</small></strong></div>
 </div>
 <nav class="ot-subject-tabs" aria-label="Subjects">
   {% for tutor in tutors %}<a href="/teacher?subject={{ tutor.id }}" class="{{ 'selected' if tutor.id == current.id }}"{% if tutor.id == current.id %} aria-current="page"{% endif %}>{{ tutor.config.name }}</a>{% endfor %}
@@ -39,7 +39,7 @@
     <div class="ot-section-title"><h2>What sparked questions?</h2><span>TOPICS</span></div>
     {% set asked = stats.topics if stats else {} %}{% set most = (asked.values() | max) if asked else 1 %}
     {% for topic in current.config.topics + ["other"] %}
-    <div class="ot-topic-row"><span>{{ topic }}</span><div class="ot-bar"><progress max="{{ most }}" value="{{ asked.get(topic, 0) }}">{{ asked.get(topic, 0) }}</progress></div><strong>{{ asked.get(topic, 0) }}</strong></div>
+    <div class="ot-topic-row"><span>{{ topic }}</span><div class="ot-bar"><progress max="{{ most }}" value="{{ asked.get(topic, 0) }}" aria-label="{{ topic }}">{{ asked.get(topic, 0) }}</progress></div><strong>{{ asked.get(topic, 0) }}</strong></div>
     {% endfor %}
     <p class="ot-data-note">Topics come from each tutor’s fixed list. Anything else is “other”. Hints asked: {{ stats.hints if stats else 0 }}.</p>
   </section>

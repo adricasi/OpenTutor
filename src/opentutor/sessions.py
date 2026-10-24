@@ -22,6 +22,7 @@ class JoinError(Exception):
 class Turn:
     role: str  # "student" | "tutor"
     text: str
+    verdict: str | None = None  # set on checked answers, so a reload can show it again
 
 
 @dataclass
