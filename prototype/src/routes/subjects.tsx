@@ -1,0 +1,4 @@
+import { createFileRoute } from '@tanstack/react-router';
+import { Shell } from '@/components/opentutor/shell';
+import { SubjectList } from '@/components/opentutor/subject-list';
+export const Route = createFileRoute('/subjects')({ head: () => ({ meta: [{ title: 'Choose your tutor · OpenTutor' }, { name: 'description', content: 'Choose Maths, English or Science and learn one step at a time.' }, { property: 'og:title', content: 'Choose your tutor · OpenTutor' }, { property: 'og:description', content: 'Three subjects. One local learning hub.' }, { property: 'og:type', content: 'website' }, { name: 'twitter:card', content: 'summary_large_image' }] }), component: () => <Shell section="Your tutors"><SubjectList /></Shell> });
