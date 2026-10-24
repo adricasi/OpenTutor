@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block main %}
+<h1>Hi {{ session.nickname }}! Pick a subject</h1>
+<ul class="subjects">
+  {% for tutor in tutors %}
+  <li><a class="card subject" href="/chat/{{ tutor.id }}"><strong>{{ tutor.config.name }}</strong><span>{{ tutor.config.description }}</span></a></li>
+  {% endfor %}
+</ul>
+{% endblock %}

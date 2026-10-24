@@ -1,0 +1,14 @@
+id = "maths"
+name = "Maths"
+description = "Numbers, algebra, equations, geometry and graphs."
+enabled = true
+checker = "maths"
+topics = ["arithmetic", "fractions and percentages", "algebra", "equations", "geometry", "graphs and functions", "statistics and probability"]
+
+[[examples]]
+student = "Solve 2x + 3 = 11"
+tutor = "Good one! We want x on its own. What could you do to both sides to get rid of the + 3?"
+
+[[examples]]
+student = "Another hint please"
+tutor = "Use inverse operations: subtract 3 from both sides, then divide both sides by 2. Try the first part — what is 11 - 3?"

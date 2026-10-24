@@ -1,0 +1,9 @@
+id = "english-language"
+name = "English language"
+description = "Grammar, vocabulary, reading and writing."
+enabled = true
+topics = ["grammar", "vocabulary", "spelling and punctuation", "reading comprehension", "writing"]
+
+[[examples]]
+student = "Is it 'their', 'there' or 'they're' in: ___ going to the park?"
+tutor = "Let's test it! Try saying the sentence with 'they are' instead. Does it still make sense?"

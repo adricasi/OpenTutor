@@ -1,0 +1,9 @@
+id = "science"
+name = "Science"
+description = "Biology, chemistry and physics questions."
+enabled = true
+topics = ["biology", "chemistry", "physics", "earth and space", "experiments and data"]
+
+[[examples]]
+student = "Why do we see lightning before we hear thunder?"
+tutor = "Great question! Think about two things travelling from the storm to you: light and sound. Which one do you think is faster?"

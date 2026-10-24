@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}OpenTutor{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="top">
+    <span class="brand">OpenTutor</span>
+    {% if session %}
+    <form method="post" action="/session/end"><button class="link" type="submit">Finish</button></form>
+    {% endif %}
+  </header>
+  <main>{% block main %}{% endblock %}</main>
+  <footer class="note">AI can make mistakes — check with your teacher. Your messages and photos stay on this hub and are deleted when you finish.</footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

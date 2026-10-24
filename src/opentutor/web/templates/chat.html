@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ tutor.config.name }} · OpenTutor{% endblock %}
+{% block main %}
+<nav class="crumbs"><a href="/subjects">Subjects</a> › {{ tutor.config.name }}</nav>
+<section id="log" class="log" aria-live="polite">
+  <p class="msg tutor">Hi! Send me a photo of your exercise or type it. I'll help you step by step.</p>
+  {% for turn in convo.turns %}
+  <p class="msg {{ turn.role }}">{{ turn.text }}</p>
+  {% endfor %}
+</section>
+<p id="status" class="status" role="status"></p>
+<div class="actions" id="actions">
+  <button type="button" data-intent="hint">Another hint</button>
+  <button type="button" data-intent="check">Check my answer</button>
+  <button type="button" data-intent="answer">Show the answer</button>
+  <button type="button" data-intent="practice">Practice</button>
+</div>
+<form id="ask" class="ask" data-tutor="{{ tutor.id }}">
+  <label for="text" class="sr-only">Your message</label>
+  <textarea id="text" name="text" maxlength="2000" rows="2" placeholder="Type your question or answer"></textarea>
+  <div class="row">
+    <label class="photo">📷 Photo<input id="image" type="file" accept="image/*" capture="environment"></label>
+    <span id="photo-name" class="help"></span>
+    <button type="submit">Send</button>
+  </div>
+</form>
+<form method="post" action="/chat/{{ tutor.id }}/new"><button class="link" type="submit">New exercise</button></form>
+{% endblock %}
+{% block scripts %}<script src="/static/app.js" defer></script>{% endblock %}
