@@ -1,7 +1,7 @@
 # Tasks: opentutor
 
 - Status: In review <!-- Draft | In review | Approved -->
-- Last updated: 2026-10-24
+- Last updated: 2026-10-24 (status after PRs #3–#9)
 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked.
 Order = implementation order. Each task is a small vertical slice (≤ ~1 day), references
@@ -34,7 +34,8 @@ hint from local Gemma 4 — through CI.
     digest and parallel setting; ADR-0004 and design.md updated with the outcome; Q-1 and
     Q-3 closed in product.md.
 
-- [ ] T-002: Application skeleton and green CI
+- [x] T-002: Application skeleton and green CI
+  - Status: Done (#3, #4): checks pass locally; GitHub CI can't run until the repo has runners.
   - Requirements: NFR-012, REQ-012 (partial: start serving), NFR-001 (bind address)
   - Depends on: —
   - Scope: `pyproject.toml` (dependencies: fastapi, uvicorn, jinja2, python-multipart,
@@ -50,7 +51,8 @@ hint from local Gemma 4 — through CI.
     errors, 3 files to reformat); tests prove the app never binds `0.0.0.0`, the CSP and
     headers are set, and log lines carry no message text.
 
-- [ ] T-003: Join, sessions and Finish
+- [x] T-003: Join, sessions and Finish
+  - Status: Done (#3).
   - Requirements: REQ-001, REQ-011
   - Depends on: T-002
   - Scope: session store (in memory, 15-session cap, 30-min expiry sweep), cookie,
@@ -58,7 +60,8 @@ hint from local Gemma 4 — through CI.
   - Done when: tests for AC-001.1 … AC-001.7 and AC-011.1 … AC-011.4 pass; session IDs
     have ≥ 128 bits of entropy (unit test).
 
-- [ ] T-004: Subject tutor folders and subject list
+- [x] T-004: Subject tutor folders and subject list
+  - Status: Done (#3).
   - Requirements: REQ-008, REQ-002
   - Depends on: T-002
   - Scope: tutor registry with Pydantic validation (`extra="forbid"`), fixed `topics`
@@ -67,7 +70,8 @@ hint from local Gemma 4 — through CI.
     list page; pattern from `tutor-ipad` `modes.py` (design.md, Reuse)
   - Done when: tests for AC-008.1 … AC-008.6 and AC-002.1 … AC-002.3 pass.
 
-- [ ] T-005: Typed question with a streamed hint (walking skeleton end to end)
+- [~] T-005: Typed question with a streamed hint (walking skeleton end to end)
+  - Status: Code done (#3); waiting on the manual run with Gemma 4 on a phone over the hotspot.
   - Requirements: REQ-003, REQ-005 (AC-005.1, AC-005.4, AC-005.6, AC-005.7 partial)
   - Depends on: T-001, T-003, T-004
   - Scope: `prompts/core.md` (hint ladder, simple English, untrusted-content rules),
@@ -80,14 +84,16 @@ hint from local Gemma 4 — through CI.
 
 ## Milestone 2: Core tutoring
 
-- [ ] T-006: Fair request queue and timeouts
+- [~] T-006: Fair request queue and timeouts
+  - Status: Queue, positions, one in-flight request, timeouts done (#3); AC-009.5 (drop waiting requests when the session ends) not done.
   - Requirements: REQ-009, AC-003.3, NFR-004 (request isolation)
   - Depends on: T-005
   - Scope: FIFO queue with N workers, `queued` events, one in-flight request per
     session, 120-s queue and 60-s model timeouts
   - Done when: tests for AC-009.1 … AC-009.5 pass (simulated slow model).
 
-- [ ] T-007: Photo questions
+- [~] T-007: Photo questions
+  - Status: Done with the fake model (#3): in-memory uploads, EXIF fix, analysis notices; missing: a real 9 MB no-temp-file test and a real-phone run.
   - Requirements: REQ-004, REQ-015 (analysis field only), NFR-002 (images)
   - Depends on: T-005
   - Scope: camera/gallery input, client-side downscale, in-memory upload parsing with
@@ -97,7 +103,8 @@ hint from local Gemma 4 — through CI.
   - Done when: tests for AC-004.1 … AC-004.6 pass, including tests that a 9 MB upload
     creates no temp file and no image bytes reach disk or logs; photo flow works on a real phone over plain HTTP.
 
-- [ ] T-008: Hint ladder, full solution and context budget
+- [x] T-008: Hint ladder, full solution and context budget
+  - Status: Done (#3); reading level is measured by `opentutor eval`.
   - Requirements: REQ-005 (all ACs)
   - Depends on: T-005
   - Scope: hint levels 1–4, "Show the answer" with mistakes reminder, context budget
@@ -105,14 +112,16 @@ hint from local Gemma 4 — through CI.
   - Done when: tests for AC-005.1 … AC-005.7 pass (fake backend asserts the level sent to
     the prompt; reading level checked in T-014).
 
-- [ ] T-009: Attempt checking with structured verdicts
+- [x] T-009: Attempt checking with structured verdicts
+  - Status: Done (#3).
   - Requirements: REQ-006 (AC-006.1 … AC-006.5)
   - Depends on: T-008
   - Scope: `Verdict` schema, Ollama `format` call, one retry with the validation error,
     rendering, insights hook
   - Done when: tests for AC-006.1 … AC-006.5 pass.
 
-- [ ] T-010: Deterministic maths checker
+- [x] T-010: Deterministic maths checker
+  - Status: Done (#7).
   - Requirements: REQ-006 (AC-006.6 … AC-006.9), ADR-0007
   - Depends on: T-009
   - Scope: adapt `tutor-ipad` `checkers/math.py` (source named in a header comment):
@@ -123,14 +132,16 @@ hint from local Gemma 4 — through CI.
     `__import__`, attribute access, huge exponents) that are rejected or time out without
     running code.
 
-- [ ] T-011: Practice sets
+- [~] T-011: Practice sets
+  - Status: Practice sets done (#3); AC-007.2 (check each practice answer separately) not done.
   - Requirements: REQ-007
   - Depends on: T-009, T-010
   - Scope: `PracticeSet` schema (exactly 3), generation with one retry, per-exercise
     checking (uses T-009/T-010)
   - Done when: tests for AC-007.1 … AC-007.5 pass.
 
-- [ ] T-012: Safety rules and safety set
+- [~] T-012: Safety rules and safety set
+  - Status: Rules and 32-prompt safety set done (#8); waiting on an eval run on the hub to meet NFR-009.
   - Requirements: REQ-010, NFR-009
   - Depends on: T-005
   - Scope: safety and injection sections of `prompts/core.md`, safety prompt set (≥ 30
@@ -139,7 +150,8 @@ hint from local Gemma 4 — through CI.
     every prompt, notices rendered); the safety set is in the evaluation harness (T-023)
     and meets NFR-009 on the hub.
 
-- [ ] T-023: Minimal evaluation harness (eval gate starts here)
+- [~] T-023: Minimal evaluation harness (eval gate starts here)
+  - Status: Harness done (#8); waiting on its first run on the hub.
   - Requirements: REQ-014 (AC-014.2, AC-014.4 partial), NFR-011
   - Depends on: T-008
   - Scope: `opentutor eval` with the hint-first scorer (normalised expected-answer match
@@ -150,7 +162,8 @@ hint from local Gemma 4 — through CI.
 
 ## Milestone 3: Operations, quality and hackathon release
 
-- [ ] T-013: Setup and start commands, operator guide
+- [~] T-013: Setup and start commands, operator guide
+  - Status: setup/start, digest pin, hotspot+loopback serving, operator README done (#3, #4); AC-012.5 (no network interface) and the warm-up request not done.
   - Requirements: REQ-012, NFR-001, NFR-007
   - Depends on: T-005
   - Scope: `opentutor setup` (deps check, `ollama pull`, digest record), `opentutor start`
@@ -200,7 +213,8 @@ hint from local Gemma 4 — through CI.
   - Done when: the end-to-end test passes in CI with no WCAG 2.2 AA violations;
     manual test on one Android and one iOS phone is recorded.
 
-- [ ] T-022: Hackathon submission
+- [~] T-022: Hackathon submission
+  - Status: Demo script and README done (#4); live demo with internet off and the video still to do.
   - Requirements: G-5 (demo), product success metric "Hackathon demo"
   - Depends on: T-005, T-007, T-008, T-009, T-013
   - Scope: demo script with pre-tested exercises, demo video, README polish (setup, demo,
@@ -215,7 +229,8 @@ hint from local Gemma 4 — through CI.
 
 ## Milestone 4: Should / Could
 
-- [ ] T-018: Teacher insights view
+- [x] T-018: Teacher insights view
+  - Status: Done (#5); typed questions are counted under the topic "other" until topic classification is added.
   - Requirements: REQ-013
   - Depends on: T-009
   - Done when: tests for AC-013.1 … AC-013.5 pass.
@@ -230,7 +245,8 @@ hint from local Gemma 4 — through CI.
   - Depends on: T-007
   - Done when: test for AC-015.1 passes.
 
-- [ ] T-021: Optional online demo link
+- [~] T-021: Optional online demo link
+  - Status: Done with a fake cloudflared (#6); waiting on a manual run through a real tunnel to a phone on mobile data.
   - Requirements: REQ-017, ADR-0006
   - Depends on: T-013
   - Scope: adapt `tutor-ipad` `pairing.py` (`QuickTunnel`, `TunnelGate`, QR helpers) with
