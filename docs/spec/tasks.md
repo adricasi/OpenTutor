@@ -42,7 +42,7 @@ hint from local Gemma 4 — through CI.
     pydantic-settings, ollama, pillow, sympy, segno — each checked for maintenance and
     license), `src/opentutor/{config.py,app.py,cli.py,model/}` with a fake model backend,
     `src/opentutor/web/{templates,static}`, `opentutor.toml` example; root ruff config
-    excludes `tutor-ipad/` (it has its own toolchain); fix the template's lint error;
+    excludes `ipad-tutor/` (it has its own toolchain); fix the template's lint error;
     coverage gate `--cov-fail-under=80` in `pyproject.toml`; base security from day one:
     security headers and CSP without inline scripts, `Origin` check, JSON log format
     without content, text-only rendering of model output and nicknames in the client.
@@ -67,7 +67,7 @@ hint from local Gemma 4 — through CI.
   - Scope: tutor registry with Pydantic validation (`extra="forbid"`), fixed `topics`
     list per tutor, `tutors/maths`,
     `tutors/english-language`, `tutors/science` (first rubrics and examples), subject
-    list page; pattern from `tutor-ipad` `modes.py` (design.md, Reuse)
+    list page; pattern from `ipad-tutor` `modes.py` (design.md, Reuse)
   - Done when: tests for AC-008.1 … AC-008.6 and AC-002.1 … AC-002.3 pass.
 
 - [~] T-005: Typed question with a streamed hint (walking skeleton end to end)
@@ -75,7 +75,7 @@ hint from local Gemma 4 — through CI.
   - Requirements: REQ-003, REQ-005 (AC-005.1, AC-005.4, AC-005.6, AC-005.7 partial)
   - Depends on: T-001, T-003, T-004
   - Scope: `prompts/core.md` (hint ladder, simple English, untrusted-content rules),
-    prompt builder with section merge (pattern from `tutor-ipad` `tutor/base.py`), Ollama
+    prompt builder with section merge (pattern from `ipad-tutor` `tutor/base.py`), Ollama
     model client with call limits (60 s first output, 120 s total, max length), `POST
     /api/messages` NDJSON stream, chat page that resumes on reload, quick actions, client
     stream reader
@@ -124,7 +124,7 @@ hint from local Gemma 4 — through CI.
   - Status: Done (#7).
   - Requirements: REQ-006 (AC-006.6 … AC-006.9), ADR-0007
   - Depends on: T-009
-  - Scope: adapt `tutor-ipad` `checkers/math.py` (source named in a header comment):
+  - Scope: adapt `ipad-tutor` `checkers/math.py` (source named in a header comment):
     allow-list tokenizer → `parse_expr` (explicit `local_dict`, empty globals,
     `evaluate=False`), step equivalence, equation solutions, worker process with resource
     limits and a 2-s limit (kill and respawn), merge with the model explanation
@@ -156,7 +156,7 @@ hint from local Gemma 4 — through CI.
   - Depends on: T-008
   - Scope: `opentutor eval` with the hint-first scorer (normalised expected-answer match
     + judge rubric `evals/judge.md`, judge model named in the report, temperature 0),
-    5 exercises per tutor, report file, exit code; pattern from `tutor-ipad` `judge.py`
+    5 exercises per tutor, report file, exit code; pattern from `ipad-tutor` `judge.py`
   - Done when: the command runs on the hub and gates hint-first compliance; from this task
     on, prompt, tutor and model changes need a passing report (AGENTS.md).
 
@@ -251,7 +251,7 @@ hint from local Gemma 4 — through CI.
   - Status: Done with a fake cloudflared (#6); waiting on a manual run through a real tunnel to a phone on mobile data.
   - Requirements: REQ-017, ADR-0006
   - Depends on: T-013
-  - Scope: adapt `tutor-ipad` `pairing.py` (`QuickTunnel`, `TunnelGate`, QR helpers) with
+  - Scope: adapt `ipad-tutor` `pairing.py` (`QuickTunnel`, `TunnelGate`, QR helpers) with
     the Linux `cloudflared` asset and checksum (`setup --online-demo`); `start
     --online-demo` with a dedicated 127.0.0.1:8001 listener, per-start in-memory token,
     session-lifetime cookie, teacher pages refused; on-page notice
@@ -271,6 +271,15 @@ person). Everything else continues after the deadline.
     selection, maths-to-words), styles; browser test with a stubbed `speechSynthesis`
   - Done when: the browser test for AC-018.1 … AC-018.5 passes; a manual check on one
     Android and one iOS phone confirms an on-device voice reads a reply with Wi-Fi only.
+
+- [~] T-026: Integrate the iPad handwriting tutor
+  - Requirements: ADR-0008 (companion service)
+  - Depends on: —
+  - Scope: root lint exclusion, references renamed to `ipad-tutor/`, README section with run
+    steps and port plan, AGENTS.md and spec wording, ADR-0008
+  - Done when: root checks pass with `ipad-tutor/` present; both apps documented.
+  - Status: Done in the repo (#19). Left: a CI job for `ipad-tutor` (`make test`, `make lint`;
+    workflow change needs approval) and a test of the shared Ollama endpoint on a Mac.
 
 ## Coverage check
 | Requirement | Tasks |

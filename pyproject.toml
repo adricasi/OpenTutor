@@ -40,7 +40,7 @@ packages = ["src/opentutor"]
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
-extend-exclude = ["tutor-ipad"]  # separate product with its own toolchain
+extend-exclude = ["ipad-tutor", "prototype"]  # own toolchains (ipad-tutor/README.md, prototype/README.md)
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "S", "SIM", "RUF", "N", "C4", "PT", "RET", "ARG"]

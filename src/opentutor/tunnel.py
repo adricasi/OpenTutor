@@ -1,6 +1,6 @@
 """Optional online demo link: a token-gated Cloudflare quick tunnel (REQ-017, ADR-0006).
 
-Adapted from tutor-ipad/tutor-app/apps/server/src/inktutor_server/pairing.py (QuickTunnel,
+Adapted from ipad-tutor/tutor-app/apps/server/src/inktutor_server/pairing.py (QuickTunnel,
 TunnelGate, with_token). Differences: Linux binary, a dedicated loopback listener so every
 tunnel request is remote, and a per-start in-memory token with a session-lifetime cookie.
 """

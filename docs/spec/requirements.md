@@ -240,4 +240,4 @@ configuration unless stated otherwise.
 - Voice input and server-side speech, native apps, content library integration, fine-tuning — product non-goals (on-device read-aloud is REQ-018).
 - Several hubs sharing load or syncing — one hub per group in this version.
 - Using the online demo link (REQ-017) as the normal way students reach the hub — it needs internet on the phones and the hub, sends traffic through Cloudflare, and Cloudflare's quick tunnels are documented as for testing only (no uptime guarantee, 200 in-flight requests).
-- Features of `tutor-ipad/` (handwriting canvas, voice, screen tutor) — separate product.
+- Features of `ipad-tutor/` (handwriting canvas, voice, screen tutor) inside the hub — they live in the separate iPad tutor service (ADR-0008).

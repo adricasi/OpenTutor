@@ -18,9 +18,11 @@ from any phone browser, with a nickname only, send a photo or typed exercise and
 hint-first tutoring, attempt checking and practice — with zero mobile data and nothing
 leaving the hub. Specification: docs/spec/ — the source of truth.
 
-`tutor-ipad/` is a **separate product** (iPad handwriting tutor, Apple-silicon Mac) with
-its own toolchain and docs. Don't change it from OpenTutor tasks; reuse its code only as
-listed in design.md ("Reuse from tutor-ipad"), naming the source file in a header comment.
+`ipad-tutor/` is the **iPad handwriting tutor**, the project's second front end. It is a
+self-contained service on an Apple-silicon Mac with its own toolchain, tests and docs
+(`ipad-tutor/README.md`, ADR-0008): don't restructure it or import from it in the hub, and
+run its checks from `ipad-tutor/tutor-app/` (`make test`, `make lint`). Hub code adapted from
+it names the source file in a header comment (design.md, "Reuse from ipad-tutor").
 
 ## Stack
 - Python 3.12+, managed with `uv` (`src/` layout, `pyproject.toml`, `uv.lock`)

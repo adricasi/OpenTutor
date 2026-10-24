@@ -45,7 +45,7 @@ class NoTutorsError(Exception):
 
 
 def parse_sections(markdown: str) -> dict[str, str]:
-    """Split markdown into `## heading` sections (pattern from tutor-ipad tutor/base.py)."""
+    """Split markdown into `## heading` sections (pattern from ipad-tutor tutor/base.py)."""
     sections: dict[str, str] = {}
     for match in re.finditer(r"^## +(\w+)\s*\n(.*?)(?=^## |\Z)", markdown, re.M | re.S):
         sections[match.group(1).lower()] = match.group(2).strip()

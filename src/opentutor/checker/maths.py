@@ -1,4 +1,4 @@
-# Adapted from tutor-ipad/tutor-app/apps/server/src/inktutor_server/checkers/math.py
+# Adapted from ipad-tutor/tutor-app/apps/server/src/inktutor_server/checkers/math.py
 # (check_chain, equal, check_equations): same ideas - consecutive steps must stay equivalent,
 # the first non-equivalent step is the mistake, equations compare solution sets, expressions
 # compare by simplify() with a numeric-probe fallback. Differences: plain-text input instead of
@@ -283,7 +283,7 @@ def _parse_expression(text: str) -> sp.Expr:
 
 
 def _equal(a: sp.Expr, b: sp.Expr) -> bool | None:
-    """True/False when decidable, None when sympy can't tell (tutor-ipad `equal`)."""
+    """True/False when decidable, None when sympy can't tell (ipad-tutor `equal`)."""
     difference = sp.simplify(a - b)
     if difference == 0:
         return True
