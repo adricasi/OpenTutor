@@ -29,6 +29,7 @@ class Exercise:
     text: str
     image: bytes | None = None
     topic: str = "other"
+    typed: bool = True  # False when the text was read from a photo by the model
 
 
 @dataclass

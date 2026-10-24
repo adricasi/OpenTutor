@@ -10,6 +10,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, ValidationError
 
+from .checker.maths import CheckResult, check_attempt
 from .model import Message, ModelClient, ModelError
 from .sessions import Conversation, Exercise, Turn
 from .tutors import Tutor
@@ -213,7 +214,9 @@ class Tutoring:
             )
             return
         topic = analysis.topic if analysis.topic in tutor.config.topics else "other"
-        convo.exercise = Exercise(text=analysis.exercise_text, image=image, topic=topic)
+        convo.exercise = Exercise(
+            text=analysis.exercise_text, image=image, topic=topic, typed=False
+        )
         if analysis.exercise_count > 1:
             convo.hint_level = 0
             yield _notice(
@@ -231,18 +234,34 @@ class Tutoring:
         if convo.exercise is None:
             yield _notice("no_exercise", "Which exercise is this answer for? Send it first.")
             return
+        decision = await self._maths_decision(tutor, convo, text, image)
         request = (
             "Check the student's attempt at the exercise. Give a verdict, a short explanation, "
             "the first incorrect step if any, and a hint to fix it. Never state the final answer "
             "unless the verdict is correct.\nAttempt:\n" + student_block(text or "(see photo)")
         )
+        if decision:
+            request = _explain_request(decision, text)
         verdict = await self._structured(self.messages(tutor, convo, request, image), Verdict)
         if verdict is None:
             yield _notice("check_failed", "I couldn't check that. Try writing your answer again.")
             return
+        if decision and decision.verdict:
+            # The checker's verdict always wins; the model only explains it (AC-006.8).
+            verdict.verdict = decision.verdict
+            verdict.first_error_step = decision.first_error_step
         convo.turns.append(Turn("student", f"My answer: {text or '(photo)'}"))
         convo.turns.append(Turn("tutor", f"{verdict.verdict}: {verdict.explanation}"))
         yield {"type": "verdict", **verdict.model_dump()}
+
+    async def _maths_decision(
+        self, tutor: Tutor, convo: Conversation, text: str, image: bytes | None
+    ) -> CheckResult | None:
+        """The maths checker's decision for a typed attempt, else None (AC-006.9, AC-006.10)."""
+        if tutor.config.checker != "maths" or image is not None or convo.exercise is None:
+            return None
+        result = await check_attempt(convo.exercise.text, convo.exercise.typed, text)
+        return result if result.decided and result.verdict else None
 
     async def _practice(self, tutor: Tutor, convo: Conversation) -> AsyncIterator[Event]:
         if convo.exercise is None:
@@ -261,6 +280,32 @@ class Tutoring:
         listing = "\n".join(f"{e.number}. {e.text}" for e in practice.exercises)
         convo.turns.append(Turn("tutor", "Practice exercises:\n" + listing))
         yield {"type": "practice", "exercises": [e.model_dump() for e in practice.exercises]}
+
+
+def _explain_request(decision: CheckResult, attempt: str) -> str:
+    """Ask the model to explain a verdict it must not change.
+
+    The checker's solution is never included; a "correct" verdict needs none because the
+    student's last step already is the answer (AC-006.8).
+    """
+    if decision.verdict == "correct":
+        facts = "The checker confirmed the student's final answer is correct."
+    elif decision.verdict == "partly_correct":
+        facts = (
+            "The checker found every step correct, but the student has not reached the final "
+            "answer yet. Encourage the next step without stating the answer."
+        )
+    else:
+        facts = (
+            "The checker found that this step is not correct: "
+            f"{decision.first_error_step!r}. Explain what to re-check there with a hint, "
+            "without writing the correct step or the final answer."
+        )
+    return (
+        f"A deterministic checker has already decided the verdict: {decision.verdict}. {facts} "
+        "Write a short explanation and a hint that agree with this verdict; set the verdict "
+        'field to "' + str(decision.verdict) + '".\nAttempt:\n' + student_block(attempt)
+    )
 
 
 def _notice(code: str, message: str) -> Event:
