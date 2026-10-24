@@ -16,6 +16,37 @@ who can't pay for tutoring. Specification: [docs/spec](docs/spec/) · decisions:
 > `tutor-ipad/` in this repository is a separate product (an iPad handwriting tutor for
 > Apple-silicon Macs) with its own README.
 
+## Hackathon submission
+We are entering **Best Use of Gemma 4** and **Best Open-Source AI Project**. The organisers' "minimum standard" for the repo and the README is listed below; this section says where each item is met. The same table, with file-level evidence, is in [docs/hackathon/CHECKLIST.md](docs/hackathon/CHECKLIST.md).
+
+**Demo video:** _link to be added once it is on YouTube._ Demo script: [docs/demo.md](docs/demo.md).
+
+### In the repo
+| Required | Status | Where |
+|---|---|---|
+| An open-source LICENSE | Done | [LICENSE](LICENSE) (MIT) |
+| Keys only in `.env`, and `.env` in `.gitignore` | Done | No API keys are needed. `.env` and `.env.*` are git-ignored (only `.env.example` is tracked); gitleaks runs in [pre-commit](.pre-commit-config.yaml) and in CI. |
+| No real personal data in tests or examples | Done | Tests, evals and tutor examples use invented text; photos are kept in memory only. |
+| Pinned dependencies, no critical vulnerabilities | Partly | Versions are locked in `uv.lock`; `pip-audit` runs in CI. The result of a fresh `uv run pip-audit` is still to be added here. |
+| A clear error when the model API fails, and a rate limit on a public demo | Done | [Errors, limits and disclaimer](#errors-limits-and-disclaimer) |
+| A disclaimer if you give legal, tax, medical or money advice | Done | OpenTutor gives homework help only; every page says "AI can make mistakes, check with your teacher". |
+
+### In this README
+| Required | Status | Where |
+|---|---|---|
+| What it is and who it's for | Done | [Top of this README](#opentutor) |
+| How to run it | Done | [Run a hub](#run-a-hub-operator-guide) and [Develop](#develop) |
+| What expertise is inside, and where it comes from | Done | [What expertise is inside](#what-expertise-is-inside-and-where-it-comes-from) |
+| The model and a link to its license | Done | [The model](#the-model); the licence wording is still to be confirmed on the official Gemma 4 model card |
+| Proof that it works better with your part | **Open** | [Targets and method](#proof-that-it-works-better-with-our-part) are set; the measured results with real Gemma 4 on the hub laptop are still to be run and filled in |
+
+### What we have built
+Taken from [docs/spec](docs/spec/) (requirements, design, tasks and progress log) and [docs/adr](docs/adr/):
+- **Hub:** join with a nickname, subject list, typed and photo questions, hint ladder, attempt checks, practice sets, fair queue, teacher insights view, optional online demo link, read-aloud of replies.
+- **Specification:** 18 requirements with testable acceptance criteria, a design, a task plan with status, and 7 architecture decision records.
+- **Quality:** 165 tests and about 89% coverage at the last recorded run (docs/spec/progress.md, not re-run here), ruff, mypy, pip-audit and gitleaks, a 34-prompt safety set and `opentutor eval` with fixed targets.
+- **Not done yet:** the run against real Gemma 4 on the hub laptop, a phone and the hotspot (task T-001), and the benchmark and soak test (T-015). See [docs/spec/tasks.md](docs/spec/tasks.md).
+
 ## How it works
 ```
 phones (any browser) ──hub Wi-Fi, no internet──▶ laptop: OpenTutor web app ──▶ Ollama + Gemma 4 (127.0.0.1)
@@ -103,7 +134,7 @@ a target is missed:
 
 **Results with real Gemma 4, base model with a plain prompt vs OpenTutor: to be filled in
 after the run on the hub laptop (task T-001/T-014).** Until then the automated tests and the
-32-prompt safety set run against the fake model backend, so they prove the behaviour of the
+34-prompt safety set run against the fake model backend, so they prove the behaviour of the
 hub, not the quality of Gemma 4's answers.
 
 ## Errors, limits and disclaimer
