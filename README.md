@@ -40,7 +40,7 @@ Reference machine: Linux with NetworkManager, 64 GB RAM, a dedicated GPU, ~20 GB
    uv run opentutor setup        # pulls the Gemma 4 model and pins its digest in opentutor.toml
    ```
    Choose another model with `OPENTUTOR_MODEL=gemma4:e2b uv run opentutor setup`.
-   Gemma 4 is released under Google's Gemma terms — read them on the model card before use.
+   Read the model's licence on its model card before use (see [The model](#the-model)).
 
 **Before each session (no internet needed):**
 1. Create the hub Wi-Fi (replace `wlan0` and pick your own password):
@@ -63,6 +63,61 @@ Reference machine: Linux with NetworkManager, 64 GB RAM, a dedicated GPU, ~20 GB
 **Supervision checklist:** tell students not to use their full name; remind them the AI can
 make mistakes; keep the laptop supervised; tap **Finish** on shared phones; restart the hub
 at the end of the day (this clears everything).
+
+## What expertise is inside, and where it comes from
+- **Tutoring method:** the hint ladder (nudge → hint → corrected step → full solution only at
+  level 4) and the rules for tone and reading level are written in
+  [`src/opentutor/prompts/core.md`](src/opentutor/prompts/core.md).
+- **Subject tutors:** each folder in [`src/opentutor/tutors/`](src/opentutor/tutors/) has a
+  `tutor.toml` (topics and worked examples) and a `rubric.md`. The team wrote them for this
+  project; they are not copied from a textbook or a curriculum. A teacher can review or add a
+  subject without touching code.
+- **Maths verdicts:** [`checker/maths.py`](src/opentutor/checker/maths.py) uses sympy, so
+  whether a typed Maths attempt is right does not depend on the model.
+- **Safety rules:** stay on task, refuse harmful requests, resist prompt injection, never
+  repeat personal details ([REQ-010](docs/spec/requirements.md)); tested by
+  [`evals/safety.toml`](evals/safety.toml).
+- **Research behind the design:** [`docs/discovery/research-notes.md`](docs/discovery/research-notes.md).
+
+## The model
+[Gemma 4](https://ollama.com/library/gemma4), served locally through Ollama. The default tag
+is `gemma4:e4b` ([`config.py`](src/opentutor/config.py)) with `gemma4:e2b` as a smaller
+fallback; the choice is recorded in [ADR-0004](docs/adr/0004-serve-gemma-4-through-ollama.md).
+Google announced Gemma 4 under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0);
+confirm the licence on the official model card for the exact tag you download. No student data
+is sent to any external model API.
+
+## Proof that it works better with our part
+"Our part" is everything around the base model: the hint ladder, the subject tutors, the
+symbolic maths checker and the safety rules. `uv run opentutor eval` scores them against the
+fixed targets in [`evals/thresholds.toml`](evals/thresholds.toml) and exits with an error when
+a target is missed:
+
+| Measure | Target |
+|---|---|
+| Replies at hint levels 1 and 2 that do not reveal the final answer | at least 95% |
+| Reading level of replies (mean Flesch-Kincaid grade) | at most 8 |
+| Attempt-check accuracy (Maths) | at least 90% (85% for other subjects) |
+| Harmful requests refused, injection attempts resisted, personal details never repeated | 100% |
+| Off-topic requests declined | at least 90% |
+
+**Results with real Gemma 4, base model with a plain prompt vs OpenTutor: to be filled in
+after the run on the hub laptop (task T-001/T-014).** Until then the automated tests and the
+32-prompt safety set run against the fake model backend, so they prove the behaviour of the
+hub, not the quality of Gemma 4's answers.
+
+## Errors, limits and disclaimer
+- **Model errors:** if the model fails or times out the student sees "Something went wrong,
+  please try again."; if the queue is too long, "The tutor is busy. Please try again." The
+  queue slot is always released.
+- **Rate limits:** at most 15 active sessions, 2 sessions and 10 join attempts per minute per
+  device, plus the fair request queue. The optional online demo link is a token-gated
+  quick tunnel meant for demos only ([ADR-0006](docs/adr/0006-offer-an-optional-online-demo-link.md)).
+- **Disclaimer:** OpenTutor is a homework helper. It does not give legal, tax, medical or
+  financial advice. Every page tells students "AI can make mistakes — check with your teacher".
+- **Secrets and data:** no API keys are needed. `.env` files are git-ignored (only
+  `.env.example` is tracked), tests and examples use invented data, dependencies are locked in
+  `uv.lock` and scanned with `pip-audit` and gitleaks.
 
 ## Develop
 ```bash
