@@ -38,6 +38,7 @@ class Conversation:
     exercise: Exercise | None = None
     turns: list[Turn] = field(default_factory=list)
     hint_level: int = 0
+    practice: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -48,6 +49,7 @@ class Session:
     last_active: float
     conversation: Conversation | None = None
     in_flight: bool = False
+    ended: bool = False  # set on Finish or expiry; waiting requests leave the queue
 
 
 def validate_nickname(raw: str) -> str:
@@ -111,9 +113,11 @@ class SessionStore:
         return session
 
     def end(self, session_id: str) -> None:
-        self._sessions.pop(session_id, None)
+        session = self._sessions.pop(session_id, None)
+        if session:
+            session.ended = True
 
     def expire(self) -> None:
         cutoff = self._now() - self.idle_seconds
         for sid in [sid for sid, s in self._sessions.items() if s.last_active < cutoff]:
-            del self._sessions[sid]
+            self._sessions.pop(sid).ended = True

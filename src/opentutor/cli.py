@@ -13,10 +13,11 @@ import time
 import segno
 
 from .app import create_app
+from .checker.maths import check_attempt
 from .config import Settings
 from .evaluation import eval_command
-from .model import OllamaModel
-from .serve import is_loopback, serve
+from .model import ModelError, OllamaModel
+from .serve import address_available, is_loopback, serve
 from .setup import setup
 from .tunnel import QuickTunnel, download_cloudflared, find_cloudflared, with_token
 
@@ -80,6 +81,21 @@ def start_online_demo(settings: Settings, token: str) -> None:
     threading.Thread(target=keep_open, daemon=True).start()
 
 
+def warm_up(settings: Settings) -> None:
+    """Load the model and start the maths checker before students arrive."""
+    asyncio.run(check_attempt("x = 1", True, "x = 1"))
+    if settings.model_backend != "ollama":
+        return
+    print("  Loading the model (the first time can take a minute) …", flush=True)
+    model = OllamaModel(
+        settings.ollama_url, settings.model, settings.model_digest, settings.model_keep_alive
+    )
+    try:
+        asyncio.run(model.warm_up())
+    except ModelError as error:
+        print(f"  warning: model warm-up failed ({error}); the first question may be slow.")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="opentutor", description="OpenTutor homework hub")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -128,6 +144,15 @@ def main(argv: list[str] | None = None) -> int:
         for problem in problems:
             print(f"error: {problem}", file=sys.stderr)
         return 1
+    if not is_loopback(settings.host) and not address_available(settings.host):
+        # AC-012.5: no hub network yet; serve on this laptop only and say how to fix it.
+        print(
+            f"  {settings.host} isn't on this laptop yet, so the hub Wi-Fi is probably off.\n"
+            "  Starting for this laptop only. To let phones in, create the hotspot (README:\n"
+            "  nmcli device wifi hotspot …) and start again with --host <hotspot IP>.\n"
+        )
+        settings = settings.model_copy(update={"host": "127.0.0.1"})
+    warm_up(settings)
     url = f"http://{settings.host}:{settings.port}/"
     print()
     segno.make(url, error="m").terminal(compact=True, border=2)

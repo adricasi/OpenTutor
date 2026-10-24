@@ -62,3 +62,15 @@ def test_ac_011_2_idle_session_expires() -> None:
     clock[0] = 29 * 60 + 30 * 60 + 1
     assert hub.get(session.id) is None
     assert len(hub) == 0
+
+
+def test_ac_009_5_finish_and_expiry_mark_session_ended() -> None:
+    clock = [0.0]
+    hub = store(clock)
+    finished = hub.join("Ana", "10.42.0.5")
+    idle = hub.join("Ben", "10.42.0.6")
+    hub.end(finished.id)
+    assert finished.ended
+    clock[0] = 31 * 60
+    hub.expire()
+    assert idle.ended

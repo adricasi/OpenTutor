@@ -21,6 +21,16 @@ def listen_addresses(host: str) -> list[str]:
     return [host] if is_loopback(host) else [host, "127.0.0.1"]
 
 
+def address_available(address: str) -> bool:
+    """True if this machine has `address` (e.g. the hotspot is up), so the hub can listen on it."""
+    try:
+        with socket.socket(socket.AF_INET6 if ":" in address else socket.AF_INET) as probe:
+            probe.bind((address, 0))
+    except OSError:
+        return False
+    return True
+
+
 def bind(address: str, port: int) -> socket.socket:
     sock = socket.socket(socket.AF_INET6 if ":" in address else socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

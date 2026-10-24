@@ -28,9 +28,21 @@ class ModelClient(Protocol):
 
 
 class OllamaModel:
-    def __init__(self, url: str, model: str, digest: str = "") -> None:
+    def __init__(self, url: str, model: str, digest: str = "", keep_alive: str = "8h") -> None:
         self._client = ollama.AsyncClient(host=url)
-        self.model, self.digest = model, digest
+        self.model, self.digest, self.keep_alive = model, digest, keep_alive
+
+    async def warm_up(self) -> None:
+        """Load the model now so the first student doesn't wait for it (REQ-012)."""
+        try:
+            await self._client.chat(
+                model=self.model,
+                messages=[{"role": "user", "content": "Hi"}],
+                options={"num_predict": 1},
+                keep_alive=self.keep_alive,
+            )
+        except (ollama.ResponseError, ConnectionError, OSError) as error:
+            raise ModelError(str(error)) from error
 
     async def stream(self, messages: list[Message], max_tokens: int) -> AsyncIterator[str]:
         try:
@@ -39,6 +51,7 @@ class OllamaModel:
                 messages=messages,
                 stream=True,
                 options={"temperature": 0.3, "num_predict": max_tokens},
+                keep_alive=self.keep_alive,
             )
             async for part in parts:
                 if part.message.content:
@@ -55,6 +68,7 @@ class OllamaModel:
                 messages=messages,
                 format=schema.model_json_schema(),
                 options={"temperature": 0, "num_predict": max_tokens},
+                keep_alive=self.keep_alive,
             )
         except (ollama.ResponseError, ConnectionError, OSError) as error:
             raise ModelError(str(error)) from error
