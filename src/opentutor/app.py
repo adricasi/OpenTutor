@@ -96,6 +96,25 @@ class BodyLimit:
         await self.app(scope, limited_receive, limited_send)
 
 
+# Prototype look per subject (docs/prototype, prototype/src/styles.css): colour class, icon, badge.
+SUBJECT_LOOKS = {
+    "maths": ("maths", "calculator", "Mx"),
+    "english-language": ("english", "languages", "En"),
+    "science": ("science", "flask-conical", "Sc"),
+}
+
+
+def subject_order(tutor: Tutor) -> tuple[int, str]:
+    """Prototype order (Maths, English, Science), then any added tutors by name."""
+    order = list(SUBJECT_LOOKS)
+    return (order.index(tutor.id) if tutor.id in order else len(order), tutor.config.name)
+
+
+def subject_look(tutor: Tutor) -> dict[str, str]:
+    css, icon, short = SUBJECT_LOOKS.get(tutor.id, ("other", "book-open", tutor.config.name[:2]))
+    return {"css": css, "icon": icon, "short": short}
+
+
 def session_ref(session_id: str) -> str:
     """Short, non-reversible reference for logs: never log the cookie value itself."""
     return hashlib.sha256(session_id.encode()).hexdigest()[:12]
@@ -123,7 +142,9 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
     MultiPartParser.spool_max_size = settings.max_upload_bytes + 1024 * 1024
     max_body = settings.max_upload_bytes + 1024 * 1024
 
-    tutors = load_tutors(settings.tutors_dir)
+    tutors = dict(
+        sorted(load_tutors(settings.tutors_dir).items(), key=lambda kv: subject_order(kv[1]))
+    )
     store = SessionStore(
         settings.max_sessions,
         settings.max_sessions_per_address,
@@ -141,6 +162,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         ),
     )
     templates = Jinja2Templates(directory=PACKAGE_DIR / "web" / "templates")
+    templates.env.globals["subject_look"] = subject_look
     insights, teacher = Insights(), TeacherGate()
 
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
@@ -174,13 +196,20 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
 
     def page(request: Request, name: str, status: int = 200, **context: Any) -> HTMLResponse:
         context.setdefault("online_demo", via_tunnel(request))
+        context.setdefault("session", None)
+        context.setdefault("section", "Join the hub")
+        context.setdefault(
+            "show_teacher",
+            not via_tunnel(request)
+            and (settings.teacher_from_network or client_address(request) in LOOPBACK),
+        )
         return templates.TemplateResponse(request, name, context, status_code=status)
 
     @app.get("/", response_class=HTMLResponse)
     async def join_page(request: Request) -> Response:
         if current(request):
             return RedirectResponse("/subjects", status_code=303)
-        return page(request, "join.html")
+        return page(request, "join.html", bye=request.query_params.get("bye") == "1")
 
     @app.post("/session")
     async def join(request: Request, nickname: Annotated[str, Form()] = "") -> Response:
@@ -199,7 +228,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         session_id = request.cookies.get(COOKIE)
         if session_id:
             store.end(session_id)
-        response = RedirectResponse("/", status_code=303)
+        response = RedirectResponse("/?bye=1", status_code=303)
         response.delete_cookie(COOKIE, path="/")
         return response
 
@@ -208,7 +237,13 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         session = current(request)
         if not session:
             return RedirectResponse("/", status_code=303)
-        return page(request, "subjects.html", session=session, tutors=list(tutors.values()))
+        return page(
+            request,
+            "subjects.html",
+            section="Your tutors",
+            session=session,
+            tutors=list(tutors.values()),
+        )
 
     def tutor_or_404(tutor_id: str) -> Tutor:
         tutor = tutors.get(tutor_id)
@@ -224,7 +259,15 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         tutor = tutor_or_404(tutor_id)
         if session.conversation is None or session.conversation.tutor_id != tutor.id:
             session.conversation = Conversation(tutor.id)  # switching subject starts afresh
-        return page(request, "chat.html", session=session, tutor=tutor, convo=session.conversation)
+        return page(
+            request,
+            "chat.html",
+            section=f"{tutor.config.name} tutor",
+            session=session,
+            tutor=tutor,
+            convo=session.conversation,
+            autofill_example=request.query_params.get("example") == "1",
+        )
 
     @app.post("/chat/{tutor_id}/new")
     async def new_chat(request: Request, tutor_id: str) -> Response:
@@ -360,11 +403,27 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
     async def teacher_page(request: Request) -> Response:
         teacher_allowed(request)
         authorised = teacher.is_teacher(request.cookies.get(TEACHER_COOKIE))
+        stats = list(insights.by_tutor.values())
+        totals = {
+            "questions": sum(sum(s.topics.values()) for s in stats),
+            "hints": sum(s.hints for s in stats),
+            "checked": sum(sum(s.verdicts.values()) for s in stats),
+        }
+        busiest = max(
+            tutors.values(),
+            key=lambda t: (
+                sum(insights.by_tutor[t.id].topics.values()) if t.id in insights.by_tutor else -1
+            ),
+        )
+        current = tutors.get(request.query_params.get("subject", ""), busiest)
         return page(
             request,
             "teacher.html",
+            section="Teacher",
             authorised=authorised,
             insights=insights,
+            totals=totals,
+            current=current,
             tutors=list(tutors.values()),
         )
 
@@ -378,7 +437,9 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
                 if teacher.locked(address)
                 else "Wrong PIN. Check the hub laptop's screen."
             )
-            return page(request, "teacher.html", 401, authorised=False, error=message)
+            return page(
+                request, "teacher.html", 401, section="Teacher", authorised=False, error=message
+            )
         response = RedirectResponse("/teacher", status_code=303)
         response.set_cookie(TEACHER_COOKIE, teacher.token, httponly=True, samesite="lax")
         return response

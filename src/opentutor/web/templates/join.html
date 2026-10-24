@@ -1,12 +1,33 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% block main %}
-<h1>Homework help, no data needed</h1>
-<form method="post" action="/session" class="card">
-  <label for="nickname">Choose a nickname</label>
-  <input id="nickname" name="nickname" maxlength="20" autocomplete="off" required value="{{ nickname or '' }}"
-         aria-describedby="nickname-help{% if error %} nickname-error{% endif %}">
-  <p id="nickname-help" class="help">1–20 letters, digits, spaces, - or _. Don't use your full name.</p>
-  {% if error %}<p id="nickname-error" class="error" role="alert">{{ error }}</p>{% endif %}
-  <button type="submit">Start</button>
-</form>
+{% if bye %}<div class="ot-notice ok" role="status"><p>Done. Your nickname, messages and photos have been deleted. See you next time!</p></div>{% endif %}
+<section class="ot-join">
+  <div>
+    <span class="ot-page-kicker"><span class="ot-star">✳</span> Free to ask. Free to learn.</span>
+    <h1>Big questions.<br><span class="ot-muted-title">Small steps.</span></h1>
+    <p class="ot-join-subtitle">OpenTutor<span>.</span></p>
+    <p class="ot-join-copy">Your homework. Your pace. A tutor that helps you find the way — not just the answer.</p>
+    <form method="post" action="/session" class="ot-join-form">
+      <label for="nickname">What should we call you?</label>
+      <div class="ot-field">
+        <input id="nickname" name="nickname" maxlength="20" autocomplete="off" required placeholder="Just a nickname…" value="{{ nickname or '' }}"
+               aria-describedby="nickname-help{% if error %} nickname-error{% endif %}">
+        <button class="btn" type="submit">Let’s begin {{ icon("arrow-up-right", 17) }}</button>
+      </div>
+      <span id="nickname-help" class="ot-help">1–20 characters · letters, numbers, spaces, - or _ · not your full name</span>
+      {% if error %}<p id="nickname-error" class="ot-error" role="alert">{{ error }}</p>{% endif %}
+    </form>
+    <div class="ot-join-promises"><span>{{ icon("check", 15) }}No account</span><span>{{ icon("check", 15) }}No saved chats</span><span>{{ icon("check", 15) }}Just curiosity</span></div>
+  </div>
+  <div class="ot-join-visual">
+    <div class="ot-type-art" aria-hidden="true"><span class="ot-art-question">?</span><span class="ot-art-plus">+</span><span class="ot-art-word">aha<span>!</span></span><span class="ot-art-note">GOOD QUESTIONS<br>MAKE GREAT BEGINNINGS.</span><span class="ot-art-star">✳</span></div>
+    <img src="/static/learning.jpg" alt="A notebook, a pencil and geometric shapes ready for learning" width="1152" height="576">
+    <div class="ot-join-art-caption">{{ icon("book-open", 18) }}<span>Maths. English. Science.<br><strong>A little help. A lot of possibility.</strong></span></div>
+  </div>
+</section>
+<div class="ot-join-bottom">
+  <span>{{ icon("wifi", 18) }}<span><strong>Local by design.</strong> OpenTutor runs Gemma 4 on this hub’s laptop — no mobile data needed.</span></span>
+  <span>{{ icon("shield-check", 18) }}<span>Your messages and photos stay on the hub and are deleted when you finish.</span></span>
+</div>
 {% endblock %}

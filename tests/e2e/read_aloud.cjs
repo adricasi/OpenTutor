@@ -32,19 +32,19 @@ function stub(mode) {
   await page.goto(url);
   await page.fill("#nickname", `Ana-${mode}`);
   await page.click("button[type=submit]");
-  await page.click("text=Maths");
+  await page.click(".ot-subject.maths");
   await page.fill("#text", "Solve 2x + 3 = 11");
   await page.click("#ask button[type=submit]");
-  await page.waitForSelector(".msg.tutor >> nth=1");
-  await page.waitForFunction(() => document.querySelectorAll(".speak").length >= 2);
+  await page.waitForSelector(".ot-turn.tutor .ot-turn-text");
+  await page.waitForFunction(() => document.querySelectorAll(".speak").length >= 1);
   const visible = await page.$$eval(".speak", (bs) => bs.filter((b) => !b.hidden).length);
   const result = { visible, spoken: [], labels: [], postsDuringSpeech: 0 };
   if (mode === "local") {
     const before = posts.length;
-    await page.click(".speak >> nth=1");
-    result.labels.push(await page.textContent(".speak >> nth=1"));
-    await page.click(".speak >> nth=1");
-    result.labels.push(await page.textContent(".speak >> nth=1"));
+    await page.click(".speak >> nth=0");
+    result.labels.push((await page.textContent(".speak >> nth=0")).trim());
+    await page.click(".speak >> nth=0");
+    result.labels.push((await page.textContent(".speak >> nth=0")).trim());
     result.spoken = await page.evaluate(() => window.__spoken);
     result.postsDuringSpeech = posts.length - before;
   }

@@ -1,21 +1,55 @@
-<!doctype html>
+{% from "_icons.html" import icon %}<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}OpenTutor{% endblock %}</title>
+  <title>{% block title %}OpenTutor · Big questions. Small steps.{% endblock %}</title>
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-  <header class="top">
-    <span class="brand">OpenTutor</span>
-    {% if session %}
-    <form method="post" action="/session/end"><button class="link" type="submit">Finish</button></form>
-    {% endif %}
-  </header>
-  {% if online_demo %}<p class="demo" role="note">Online demo: this page reaches the hub through the internet (Cloudflare). For classroom use, join the hub Wi-Fi instead.</p>{% endif %}
-  <main>{% block main %}{% endblock %}</main>
-  <footer class="note">AI can make mistakes — check with your teacher. Your messages and photos stay on this hub and are deleted when you finish.</footer>
-  {% block scripts %}{% endblock %}
+<div class="ot-app">
+  <aside class="ot-rail">
+    <a class="ot-brand" href="{{ '/subjects' if session else '/' }}"><span class="ot-logo">{{ icon("book-open", 23) }}</span>OpenTutor<span class="ot-brand-period">.</span></a>
+    <span class="ot-rail-label">ONE HUB. MANY POSSIBILITIES.</span>
+    <nav aria-label="Main">
+      <a class="ot-nav {{ 'selected' if section != 'Teacher' }}" href="{{ '/subjects' if session else '/' }}">{{ icon("grid-2x2", 19) }}<span class="ot-nav-label">Learn</span>{{ icon("arrow-up-right", 14) }}</a>
+      {% if show_teacher %}<a class="ot-nav {{ 'selected' if section == 'Teacher' }}" href="/teacher">{{ icon("graduation-cap", 19) }}<span class="ot-nav-label">Teacher</span>{{ icon("arrow-up-right", 14) }}</a>{% endif %}
+    </nav>
+    <div class="ot-rail-statement" aria-hidden="true"><span>?</span><p>Great things<br>start with<br>a question.</p></div>
+    <div class="ot-rail-footer"><span class="ot-live-dot"></span>{{ 'Online demo' if online_demo else 'Local hub' }}<p>Gemma 4 · on this laptop</p></div>
+  </aside>
+  <div class="ot-body">
+    <header class="ot-topbar">
+      <div class="ot-crumb">OpenTutor {{ icon("chevron-right", 14) }}<strong>{{ section }}</strong></div>
+      <div class="ot-top-right">
+        <span class="ot-mode">{{ icon("wifi", 15) }}{{ 'Online demo' if online_demo else 'Local-first' }}</span>
+        {% if session %}
+        <span class="ot-user"><span aria-hidden="true">{{ session.nickname[:1] | upper }}</span><strong>{{ session.nickname }}</strong></span>
+        <button class="btn btn-ghost btn-icon" type="button" data-open-finish aria-label="Finish and delete my session" title="Finish">{{ icon("log-out", 20) }}</button>
+        {% endif %}
+      </div>
+    </header>
+    {% if online_demo %}<div class="ot-banner" role="note">Online demo: this page reaches the hub through the internet (Cloudflare). For classroom use, join the hub Wi-Fi instead.</div>{% endif %}
+    <main class="ot-main">{% block main %}{% endblock %}</main>
+    <footer class="ot-footer">
+      <span>{{ icon("shield-check", 16) }}No accounts. Your messages and photos stay on this hub and are deleted when you finish.</span>
+      <span>AI can make mistakes — check with your teacher.</span>
+      <span>Learning, not copying. <span class="ot-footer-mark">✳</span></span>
+    </footer>
+  </div>
+</div>
+{% if session %}
+<dialog class="ot-dialog" id="finish-dialog" aria-labelledby="finish-title">
+  {{ icon("shield-check", 30) }}
+  <h2 id="finish-title">Call it a day?</h2>
+  <p>Everything will be deleted. This cannot be undone.</p>
+  <p>Your nickname, messages and photos disappear from the hub. Only anonymous classroom totals stay until the hub restarts.</p>
+  <form method="post" action="/session/end" class="ot-dialog-actions">
+    <button class="btn btn-outline" type="button" data-close-finish>Keep learning</button>
+    <button class="btn" type="submit">Finish &amp; delete</button>
+  </form>
+</dialog>
+{% endif %}
+<script src="/static/app.js" defer></script>
 </body>
 </html>

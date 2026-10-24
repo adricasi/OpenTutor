@@ -1,29 +1,71 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% block title %}{{ tutor.config.name }} · OpenTutor{% endblock %}
-{% block main %}
-<nav class="crumbs"><a href="/subjects">Subjects</a> › {{ tutor.config.name }}</nav>
-<section id="log" class="log" aria-live="polite">
-  <p class="msg tutor">Hi! Send me a photo of your exercise or type it. I'll help you step by step.</p>
-  {% for turn in convo.turns %}
-  <p class="msg {{ turn.role }}">{{ turn.text }}</p>
-  {% endfor %}
-</section>
-<p id="status" class="status" role="status"></p>
-<div class="actions" id="actions">
-  <button type="button" data-intent="hint">Another hint</button>
-  <button type="button" data-intent="check">Check my answer</button>
-  <button type="button" data-intent="answer">Show the answer</button>
-  <button type="button" data-intent="practice">Practice</button>
+{% block main %}{% set look = subject_look(tutor) %}
+<div class="ot-chat-layout {{ look.css }}">
+  <section class="ot-conversation">
+    <div class="ot-chat-top">
+      <div><span class="ot-tutor-symbol" aria-hidden="true">{{ look.short }}</span>
+        <div><h1>{{ tutor.config.name }} tutor<span class="ot-live-dot" aria-hidden="true"></span></h1><p>Not the answer. The way to get there.</p></div></div>
+      <form method="post" action="/chat/{{ tutor.id }}/new"><button class="btn btn-ghost" type="submit">{{ icon("plus", 17) }}<span>New exercise</span></button></form>
+    </div>
+    <div class="ot-chat-scroll" id="log" aria-live="polite">
+      {% if not convo.turns %}
+      <div class="ot-empty-chat" id="empty">
+        <span class="ot-big-question" aria-hidden="true">?</span>
+        <span class="ot-page-kicker">Every question is a good start</span>
+        <h2>Let’s figure it out.</h2>
+        <p>Type your exercise or share a photo.<br>I’ll help you think, one step at a time.</p>
+        {% if tutor.config.examples %}<button class="btn btn-outline" type="button" data-example="{{ tutor.config.examples[0].student }}">{{ tutor.config.examples[0].student }} {{ icon("arrow-up-right", 16) }}</button>{% endif %}
+        <div class="ot-photo-choices">
+          <label class="btn btn-ghost" for="camera">{{ icon("camera", 18) }}Take a photo</label>
+          <label class="btn btn-ghost" for="image">{{ icon("image-plus", 18) }}Choose a photo</label>
+        </div>
+      </div>
+      {% endif %}
+      {% for turn in convo.turns %}
+      <div class="ot-turn {{ turn.role }}">
+        {% if turn.role == "tutor" %}<span class="ot-turn-avatar" aria-hidden="true">{{ icon("book-open", 17) }}</span>{% endif %}
+        <div><span class="ot-turn-name">{{ "OpenTutor" if turn.role == "tutor" else session.nickname }}</span><p class="ot-turn-text">{{ turn.text }}</p></div>
+      </div>
+      {% endfor %}
+    </div>
+    <p id="status" class="ot-stream-label" role="status"></p>
+    <div class="ot-queue" id="queue" hidden><span class="ot-queue-number" id="queue-number">#1</span><div><strong id="queue-message">You’re next in line.</strong><p>Your place is saved. Everyone gets a turn.</p></div><span class="ot-pulse" aria-hidden="true">•••</span></div>
+    <div id="practice" hidden></div>
+    <div class="ot-actions" id="actions">
+      <button class="btn btn-outline" type="button" data-intent="hint">{{ icon("lightbulb", 16) }}Another hint</button>
+      <button class="btn btn-ghost" type="button" data-intent="check">{{ icon("check", 16) }}Check my answer</button>
+      <button class="btn btn-ghost" type="button" data-intent="answer">{{ icon("eye", 16) }}Show the answer</button>
+      <button class="btn btn-ghost" type="button" data-intent="practice">{{ icon("plus", 16) }}Practice</button>
+    </div>
+    <div class="ot-photo-preview" id="photo-preview" hidden><img id="photo-thumb" alt="Photo ready to send"><span id="photo-name"></span><button class="btn btn-ghost btn-icon" type="button" id="photo-remove" aria-label="Remove photo">{{ icon("x", 18) }}</button></div>
+    <form id="ask" class="ot-composer" data-tutor="{{ tutor.id }}" data-nickname="{{ session.nickname }}" data-hint-level="{{ convo.hint_level }}"{% if autofill_example and tutor.config.examples %} data-autofill="{{ tutor.config.examples[0].student }}"{% endif %}>
+      <label class="btn btn-ghost btn-icon" for="image" title="Add a photo">{{ icon("image-plus", 20) }}<span class="sr-only">Add a photo</span></label>
+      <label for="text" class="sr-only">Your question or answer</label>
+      <textarea id="text" name="text" maxlength="2000" rows="2" placeholder="What are you working on?"></textarea>
+      <button class="btn btn-icon" type="submit" aria-label="Send">{{ icon("arrow-up", 20) }}</button>
+    </form>
+    <div class="ot-composer-foot"><span>AI can make mistakes. Check with your teacher.</span><span id="count">0 / 2,000</span></div>
+    <input id="image" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" tabindex="-1">
+    <input id="camera" type="file" accept="image/*" capture="environment" class="sr-only" tabindex="-1">
+    <template id="tpl-avatar">{{ icon("book-open", 17) }}</template>
+    <template id="tpl-verdict">{{ icon("circle-check", 16) }}</template>
+    <template id="tpl-volume">{{ icon("volume-2", 16) }}</template>
+    <template id="tpl-stop">{{ icon("square", 16) }}</template>
+    <template id="tpl-check">{{ icon("check", 18) }}</template>
+  </section>
+  <aside class="ot-chat-aside">
+    <span class="ot-page-kicker">Your way forward</span>
+    <h2>Aha!<br>Not just<br><span>an answer.</span></h2>
+    <ol class="ot-hint-ladder" id="ladder">
+      {% for label in ["A nudge", "The method", "The next step", "The answer"] %}
+      <li data-level="{{ loop.index }}" class="{{ 'done' if convo.hint_level >= loop.index }}"><span>{{ loop.index }}</span>{{ label }}</li>
+      {% endfor %}
+    </ol>
+    <p class="ot-aside-note">The answer is yours to ask for.<br>The thinking is yours to keep.</p>
+    <div class="ot-current-exercise" id="desk"{% if not convo.exercise %} hidden{% endif %}><span>ON YOUR DESK</span><p id="desk-text">{{ convo.exercise.text if convo.exercise else "" }}</p></div>
+    <p class="ot-aside-privacy">{{ icon("shield-check", 16) }}Deleted when you tap Finish.</p>
+  </aside>
 </div>
-<form id="ask" class="ask" data-tutor="{{ tutor.id }}">
-  <label for="text" class="sr-only">Your message</label>
-  <textarea id="text" name="text" maxlength="2000" rows="2" placeholder="Type your question or answer"></textarea>
-  <div class="row">
-    <label class="photo">📷 Photo<input id="image" type="file" accept="image/*" capture="environment"></label>
-    <span id="photo-name" class="help"></span>
-    <button type="submit">Send</button>
-  </div>
-</form>
-<form method="post" action="/chat/{{ tutor.id }}/new"><button class="link" type="submit">New exercise</button></form>
 {% endblock %}
-{% block scripts %}<script src="/static/app.js" defer></script>{% endblock %}

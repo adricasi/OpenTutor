@@ -25,6 +25,8 @@ phones (any browser) ──hub Wi-Fi, no internet──▶ laptop: OpenTutor web
 - **Subject tutors:** Maths, English language and Science, each a folder under
   `src/opentutor/tutors/` (`tutor.toml` + `rubric.md`). Add a subject by adding a folder.
 - **Fair queue:** students see their place in line when the tutor is busy.
+- **Design:** the student and teacher screens follow the team prototype in `prototype/`
+  (served as plain pages: no framework, nothing loaded from the internet).
 - **Read aloud:** each tutor reply has a 🔊 button that uses the phone's own on-device voice
   (hidden if the phone has none), so students who find reading hard can listen.
 

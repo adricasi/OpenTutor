@@ -1,27 +1,58 @@
 {% extends "base.html" %}
-{% block title %}Teacher view · OpenTutor{% endblock %}
+{% from "_icons.html" import icon %}
+{% block title %}Teacher insights · OpenTutor{% endblock %}
 {% block main %}
-<h1>Teacher view</h1>
 {% if not authorised %}
-<form method="post" action="/teacher/login" class="card">
-  <label for="pin">Teacher PIN (shown on the hub laptop's screen)</label>
-  <input id="pin" name="pin" inputmode="numeric" maxlength="6" autocomplete="off" required>
-  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
-  <button type="submit">Open</button>
-</form>
+<div class="ot-teacher-entry">
+  <div>
+    <span class="ot-page-kicker">Classroom, not surveillance</span>
+    <h1>See the learning.<br><span class="ot-muted-title">Not the learner.</span></h1>
+    <p>A little insight can change the next lesson.<br>No names, no conversations, just learning patterns.</p>
+    <div class="ot-teacher-art">{{ icon("graduation-cap", 95) }}<span>+ understanding<br>− personal data</span></div>
+  </div>
+  <section class="ot-pin-panel">
+    {{ icon("lock-keyhole", 27) }}
+    <h2>For the teacher</h2>
+    <p>Enter the six-digit PIN shown on the hub laptop’s screen.</p>
+    <form method="post" action="/teacher/login">
+      <label for="pin">Teacher PIN</label>
+      <input id="pin" name="pin" inputmode="numeric" type="password" maxlength="6" autocomplete="off" required placeholder="••••••">
+      {% if error %}<p class="ot-error" role="alert">{{ error }}</p>{% endif %}
+      <button class="btn" type="submit">Open insights {{ icon("arrow-up-right", 17) }}</button>
+    </form>
+  </section>
+</div>
 {% else %}
-<p class="help">Totals since the hub started. No messages, photos or nicknames are kept.</p>
-{% for tutor in tutors %}{% set stats = insights.by_tutor.get(tutor.id) %}
-<section class="card">
-  <h2>{{ tutor.config.name }}</h2>
-  {% if not stats %}<p class="help">No questions yet.</p>{% else %}
-  <p>Hints asked: {{ stats.hints }} · Answers checked: correct {{ stats.verdicts['correct'] }}, partly {{ stats.verdicts['partly_correct'] }}, not yet {{ stats.verdicts['not_yet_correct'] }}</p>
-  <h3>Topics asked about</h3>
-  <ul>{% for topic, count in stats.topics.most_common() %}<li>{{ topic }}: {{ count }}</li>{% endfor %}</ul>
-  {% if stats.struggles %}<h3>Where students struggled most</h3>
-  <ul>{% for topic, count in stats.struggles.most_common(3) %}<li>{{ topic }}: {{ count }} "not yet correct"</li>{% endfor %}</ul>{% endif %}
-  {% endif %}
-</section>
-{% endfor %}
+<span class="ot-page-kicker">A little insight. A better next lesson.</span>
+<div class="ot-title-row"><div><h1>The classroom,<br><span class="ot-muted-title">in perspective.</span></h1><p>Anonymous totals since the hub started.</p></div></div>
+<div class="ot-stat-strip">
+  <div><span>QUESTIONS EXPLORED</span><strong>{{ totals.questions }}<small>↗</small></strong></div>
+  <div><span>HINTS REQUESTED</span><strong>{{ totals.hints }}<small>✳</small></strong></div>
+  <div><span>ATTEMPTS CHECKED</span><strong>{{ totals.checked }}<small>✓</small></strong></div>
+</div>
+<nav class="ot-subject-tabs" aria-label="Subjects">
+  {% for tutor in tutors %}<a href="/teacher?subject={{ tutor.id }}" class="{{ 'selected' if tutor.id == current.id }}"{% if tutor.id == current.id %} aria-current="page"{% endif %}>{{ tutor.config.name }}</a>{% endfor %}
+</nav>
+{% set stats = insights.by_tutor.get(current.id) %}
+<div class="ot-insights-grid">
+  <section>
+    <div class="ot-section-title"><h2>What sparked questions?</h2><span>TOPICS</span></div>
+    {% set asked = stats.topics if stats else {} %}{% set most = (asked.values() | max) if asked else 1 %}
+    {% for topic in current.config.topics + ["other"] %}
+    <div class="ot-topic-row"><span>{{ topic }}</span><div class="ot-bar"><progress max="{{ most }}" value="{{ asked.get(topic, 0) }}">{{ asked.get(topic, 0) }}</progress></div><strong>{{ asked.get(topic, 0) }}</strong></div>
+    {% endfor %}
+    <p class="ot-data-note">Topics come from each tutor’s fixed list. Anything else is “other”. Hints asked: {{ stats.hints if stats else 0 }}.</p>
+  </section>
+  <section>
+    <div class="ot-section-title"><h2>How are attempts going?</h2><span>FEEDBACK</span></div>
+    {% for kind, label in [("correct", "Correct"), ("partly_correct", "Partly correct"), ("not_yet_correct", "Not yet")] %}
+    <div class="ot-verdict-row {{ kind }}"><span></span><p>{{ label }}</p><strong>{{ stats.verdicts[kind] if stats else 0 }}</strong></div>
+    {% endfor %}
+    <div class="ot-teacher-observation"><span class="ot-star" aria-hidden="true">✳</span><div><span>NEXT LESSON IDEA</span>
+      {% if stats and stats.struggles %}<p>Revisit {{ stats.struggles.most_common(1)[0][0] }}. A short worked example could help.</p>
+      {% else %}<p>Keep exploring. More attempts will show where a little support can help.</p>{% endif %}</div></div>
+  </section>
+</div>
+<p class="ot-anonymous-note">{{ icon("shield-check", 18) }}Only anonymous counts. No message text, photos or nicknames. Totals reset when the hub restarts.</p>
 {% endif %}
 {% endblock %}

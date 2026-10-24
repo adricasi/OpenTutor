@@ -37,8 +37,8 @@ def test_ac_013_2_and_3_aggregated_insights(settings: Settings, fake: FakeModel)
     page = client.post("/teacher/login", data={"pin": pin})
     assert page.status_code == 200
     assert "Hints asked: 1" in page.text
-    assert "not yet 1" in page.text
-    assert "Ana" not in page.text.split("<main>")[1]  # no nicknames
+    assert "<p>Not yet</p><strong>1</strong>" in page.text
+    assert "Ana" not in page.text.split("<main")[1]  # no nicknames
     assert "Solve 2x" not in page.text  # no message text
 
 
