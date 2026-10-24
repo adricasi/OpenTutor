@@ -194,7 +194,8 @@ hint from local Gemma 4 — through CI.
   - Done when: the report on the hub meets NFR-005 and NFR-006 and the soak meets NFR-004,
     or the gaps are filed as tasks.
 
-- [ ] T-016: Security hardening, privacy and offline verification
+- [~] T-016: Security hardening, privacy and offline verification
+  - Status: `security-auditor` review done; its Blocker and Should-fix items fixed (#13). Left: offline checklist, outbound capture and port scan on the hub, and the review's remaining nits (cloudflared checksum at start, PIN-failure map pruning, checker lock timeout).
   - Requirements: NFR-001, NFR-002, NFR-003, NFR-008
   - Depends on: T-007, T-013
   - Scope: verification of what T-002…T-013 built: rotating log file, offline checklist

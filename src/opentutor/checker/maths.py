@@ -195,6 +195,9 @@ def _check_structure(tokens: list[Token]) -> None:
         operand = tokens[index + 1 : end]
         if ("op", "^") in operand or (end < len(tokens) and tokens[end] == ("op", "^")):
             raise UnreadableError("tower of powers")
+        inner = operand[1:-1] if operand and operand[0][0] == "lpar" else operand
+        if len(inner) != 1 or inner[0][0] not in {"num", "var", "const"}:
+            raise UnreadableError("exponent must be a number or a letter")
         numbers = [float(text) for kind, text in operand if kind == "num"]
         if any(n > MAX_EXPONENT for n in numbers):
             raise UnreadableError("exponent too large")

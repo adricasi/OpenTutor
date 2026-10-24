@@ -52,6 +52,50 @@ SECURITY_HEADERS = {
 }
 
 
+class BodyLimit:
+    """Cap every request body, with or without Content-Length (security review Blocker).
+
+    Chunked uploads have no Content-Length, so the header check alone let a client stream
+    unlimited multipart data into memory or temp files. Counting the bytes FastAPI reads
+    keeps every upload under the cap, which is also below the in-memory spool size.
+    """
+
+    def __init__(self, app: Any, max_body: int) -> None:
+        self.app, self.max_body = app, max_body
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        received = 0
+        exceeded = False
+
+        async def limited_receive() -> Any:
+            nonlocal received, exceeded
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > self.max_body:
+                    exceeded = True
+                    raise HTTPException(413, "Request too large")  # stops reading the body
+            return message
+
+        async def limited_send(message: Any) -> None:
+            # FastAPI turns errors while parsing a body into a 400; answer 413 instead.
+            if not exceeded:
+                await send(message)
+            elif message["type"] == "http.response.start":
+                body = b'{"detail":"request too large"}'
+                headers = [
+                    (b"content-type", b"application/json"),
+                    (b"content-length", b"%d" % len(body)),
+                ]
+                await send({"type": "http.response.start", "status": 413, "headers": headers})
+                await send({"type": "http.response.body", "body": body})
+
+        await self.app(scope, limited_receive, limited_send)
+
+
 def session_ref(session_id: str) -> str:
     """Short, non-reversible reference for logs: never log the cookie value itself."""
     return hashlib.sha256(session_id.encode()).hexdigest()[:12]
@@ -209,23 +253,27 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             )
         photo: bytes | None = None
         if image is not None and image.filename:
+            raw = await image.read(settings.max_upload_bytes + 1)
             try:
-                photo = prepare_image(
-                    await image.read(settings.max_upload_bytes + 1),
-                    settings.max_upload_bytes,
-                    settings.image_max_side,
-                )
+                async with decode_slots:  # decode off the event loop, two at a time
+                    photo = await asyncio.to_thread(
+                        prepare_image, raw, settings.max_upload_bytes, settings.image_max_side
+                    )
             except ImageRejectedError as error:
                 raise HTTPException(400, str(error)) from error
         if not text and photo is None and intent in {"ask", "new_exercise", "check"}:
             raise HTTPException(400, "Type a message or add a photo")
-        if session.in_flight:
+        now = time.monotonic()
+        busy_limit = settings.queue_timeout_s + settings.call_timeout_s + 30
+        if session.in_flight_since is not None and now - session.in_flight_since < busy_limit:
             raise HTTPException(409, "Please wait for the current answer")
+        session.in_flight_since = now  # set before streaming, so a second request gets 409
         tutor = tutors[session.conversation.tutor_id]
         stream = run_request(session, tutor, intent, text, photo)  # type: ignore[arg-type]
         return StreamingResponse(stream, media_type="application/x-ndjson")
 
     background: set[asyncio.Task[None]] = set()
+    decode_slots = asyncio.Semaphore(2)
 
     def track(coroutine: Coroutine[Any, Any, None]) -> None:
         task = asyncio.create_task(coroutine)
@@ -253,7 +301,6 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         convo = session.conversation
         if convo is None:
             return
-        session.in_flight = True
         record: dict[str, Any] = {
             "request": uuid.uuid4().hex[:12],
             "session": session_ref(session.id),
@@ -301,7 +348,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             finally:
                 queue.release()
         finally:
-            session.in_flight = False
+            session.in_flight_since = None
             record["total_s"] = round(time.monotonic() - start, 2)
             log.info(json.dumps(record))
 
@@ -343,6 +390,7 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
         ok, message = await model.health()
         return JSONResponse({"ok": ok, "model": message}, status_code=200 if ok else 503)
 
+    app.add_middleware(BodyLimit, max_body=max_body)
     if settings.online_demo:
         app.add_middleware(TunnelGate, tunnel_port=settings.tunnel_port, token=app.state.demo_token)
     return app

@@ -48,7 +48,7 @@ class Session:
     address: str
     last_active: float
     conversation: Conversation | None = None
-    in_flight: bool = False
+    in_flight_since: float | None = None  # set when a request is accepted (AC-009.3)
     ended: bool = False  # set on Finish or expiry; waiting requests leave the queue
 
 
