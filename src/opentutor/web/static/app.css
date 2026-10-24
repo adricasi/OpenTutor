@@ -267,6 +267,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
   background-image: repeating-linear-gradient(to bottom, transparent 0 51px, var(--secondary) 51px 52px); }
 .ot-pad-tools { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; align-items: center; }
 .ot-pad-space { flex: 1; }
+.btn.listening { background: var(--math-surface); color: var(--math-ink); animation: ot-pulse 1.2s infinite; }
 .ot-reading { font-size: 14px; color: var(--muted-foreground); }
 
 /* Finish dialog (shell.tsx) */
@@ -385,6 +386,6 @@ button, input, textarea, select { font: inherit; color: inherit; }
   .ot-topic-row { grid-template-columns: 110px 1fr 26px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ot-pulse, .ot-stream-label .ot-live-dot { animation: none; }
+  .ot-pulse, .ot-stream-label .ot-live-dot, .btn.listening { animation: none; }
   .ot-subject { transition: none; }
 }

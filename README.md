@@ -64,8 +64,14 @@ phones (any browser) ──hub Wi-Fi, no internet──▶ laptop: OpenTutor web
   handwritten question is read like a photo; a handwritten answer is read into text, shown to
   the student ("I read your writing as: …") and then checked, by the maths checker for Maths.
   This brings the iPad tutor's read → check → explain loop to every phone and tablet.
-- **Read aloud:** each tutor reply has a 🔊 button that uses the phone's own on-device voice
-  (hidden if the phone has none), so students who find reading hard can listen.
+- **Speak:** the 🎤 button in the message box (or "Say it out loud") turns the student's
+  voice into text in the box, to check before sending. It uses the browser's speech
+  recognition where the page may use it (the online demo link, or the hub laptop itself);
+  on the plain-HTTP hub Wi-Fi it points the student to the microphone key on their keyboard.
+  The hub never receives audio.
+- **Read aloud:** each tutor reply has a 🔊 button that reads it with the phone's own offline
+  voice; if the phone has none, the button explains how to add one (online voices are never
+  used).
 
 ## Run a hub (operator guide)
 Reference machine: Linux with NetworkManager, 64 GB RAM, a dedicated GPU, ~20 GB disk.

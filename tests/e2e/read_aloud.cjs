@@ -39,6 +39,11 @@ function stub(mode) {
   await page.waitForFunction(() => document.querySelectorAll(".speak").length >= 1);
   const visible = await page.$$eval(".speak", (bs) => bs.filter((b) => !b.hidden).length);
   const result = { visible, spoken: [], labels: [], postsDuringSpeech: 0 };
+  if (mode === "none") {
+    await page.click(".speak >> nth=0");
+    result.spoken = await page.evaluate(() => window.__spoken);
+    result.notice = await page.locator(".ot-notice p").last().textContent();
+  }
   if (mode === "local") {
     const before = posts.length;
     await page.click(".speak >> nth=0");

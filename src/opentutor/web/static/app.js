@@ -56,7 +56,6 @@
       if (!synth) return;
       const local = synth.getVoices().filter((v) => v.localService && /^en([-_]|$)/i.test(v.lang));
       voice = local.find((v) => /^en[-_](GB|US)/i.test(v.lang)) || local[0] || null;
-      document.querySelectorAll(".speak").forEach((b) => { b.hidden = !voice; });
     }
 
     function words(value) {
@@ -81,7 +80,12 @@
       synth.cancel();
       if (playing) label(playing, false);
       playing = null;
-      if (wasMine || !voice) return;
+      if (wasMine) return;
+      if (!voice) {
+        // Never fall back to an online voice: the reply text would leave the phone (AC-018.3).
+        notice("This phone has no offline English voice yet. Add one in your phone’s settings (Text-to-speech or Spoken content), then tap Read aloud again.");
+        return;
+      }
       const utterance = new SpeechSynthesisUtterance(words(value));
       utterance.voice = voice;
       utterance.lang = voice.lang;
@@ -97,7 +101,6 @@
       const button = document.createElement("button");
       button.type = "button";
       button.className = "speak";
-      button.hidden = !voice;
       label(button, false);
       button.addEventListener("click", () => toggle(button, textEl.textContent));
       textEl.after(button);
@@ -412,6 +415,70 @@
     document.getElementById("pad-use").addEventListener("click", use);
     window.addEventListener("resize", () => { if (!box.hidden) size(); });
     return { open: open };
+  })();
+
+  // Speak instead of typing (REQ-020): the browser's speech recognition where this page may
+  // use it, otherwise the keyboard's own microphone key. Audio never reaches the hub.
+  const dictation = (function () {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const buttons = document.querySelectorAll("[data-speak]");
+    let recognition = null;
+    let listening = false;
+    let told = false;
+    try { told = window.sessionStorage.getItem("ot-speak-told") === "1"; } catch (e) { told = false; }
+
+    function setListening(on) {
+      listening = on;
+      buttons.forEach((b) => {
+        b.classList.toggle("listening", on);
+        if (b.id === "speak") b.setAttribute("aria-label", on ? "Stop listening" : "Speak");
+      });
+      if (on) {
+        const dot = document.createElement("span");
+        dot.className = "ot-live-dot";
+        status.replaceChildren(dot, document.createTextNode("Listening… tap the microphone again when you’ve finished."));
+        announce("Listening.");
+      } else if (!busyNow) {
+        status.replaceChildren();
+      }
+    }
+
+    function keyboardInstead() {
+      text.focus();
+      notice("Tap the microphone on your keyboard to speak, then check the words and send.");
+    }
+
+    function toggle() {
+      if (busyNow) return;
+      if (!told) {
+        told = true;
+        try { window.sessionStorage.setItem("ot-speak-told", "1"); } catch (e) { /* private mode */ }
+        notice("Your phone turns your voice into text (on some phones that uses the internet). OpenTutor never records your voice.");
+      }
+      if (listening && recognition) { recognition.stop(); return; }
+      if (!Recognition) { keyboardInstead(); return; }
+      recognition = new Recognition();
+      recognition.lang = /^en/i.test(navigator.language || "") ? navigator.language : "en-GB";
+      recognition.interimResults = true;
+      recognition.continuous = false;
+      const before = text.value.trim() ? text.value.trim() + " " : "";
+      recognition.onresult = (e) => {
+        let words = "";
+        for (let i = 0; i < e.results.length; i++) words += e.results[i][0].transcript;
+        text.value = (before + words).slice(0, 2000);
+        updateCount();
+      };
+      recognition.onerror = (e) => {
+        setListening(false);
+        if (e.error === "no-speech") notice("I didn’t hear anything. Tap the microphone and try again.");
+        else if (e.error !== "aborted") keyboardInstead();
+      };
+      recognition.onend = () => { setListening(false); if (text.value.trim()) text.focus(); };
+      try { recognition.start(); setListening(true); } catch (e) { keyboardInstead(); }
+    }
+
+    buttons.forEach((b) => b.addEventListener("click", toggle));
+    return { listening: () => listening };
   })();
 
   function practiceResult(number, verdict) {
