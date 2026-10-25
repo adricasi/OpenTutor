@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_icons.html" import icon %}
+{% block title %}iPad tutor · OpenTutor{% endblock %}
+{% block main %}
+<div class="ot-teacher-entry ot-ipad-entry">
+  <div>
+    <span class="ot-page-kicker"><span class="ot-star">✳</span> Write with Apple Pencil</span>
+    <h1>The iPad tutor<br><span class="ot-muted-title">isn’t connected yet.</span></h1>
+    <p>On an iPad you can write your working by hand and see it marked on the page. This hub doesn’t know where the iPad tutor is yet, so ask your teacher to connect it.</p>
+    <p>You can still ask the tutors here: type, take a photo or write by hand on this screen.</p>
+    <a class="btn btn-outline" href="/">Back to OpenTutor</a>
+  </div>
+  <section class="ot-pin-panel ot-ipad-setup" aria-labelledby="ipad-setup-title">
+    {{ icon("tablet", 27) }}
+    <h2 id="ipad-setup-title">For the teacher</h2>
+    <p>The iPad tutor is a separate service on a Mac. To connect it:</p>
+    <ol>
+      <li>On the Mac, start it: <code>cd ipad-tutor/tutor-app &amp;&amp; make ipad</code></li>
+      <li>Start this hub with <code>OPENTUTOR_IPAD_URL=&lt;the link it prints&gt;</code> (or set <code>ipad_url</code> in <code>opentutor.toml</code>).</li>
+    </ol>
+    <p>The iPad’s microphone needs the HTTPS link that <code>make ipad</code> prints. See the README, “iPad handwriting tutor”.</p>
+  </section>
+</div>
+{% endblock %}

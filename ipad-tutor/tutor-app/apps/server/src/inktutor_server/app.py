@@ -29,6 +29,7 @@ from .agent import Agent
 from .config import APP_ROOT, Settings, configure_hf
 from .demo import install as install_demo
 from .pairing import install as install_pairing
+from .screen import install as install_screen
 from .store import Store
 from .teacher import homework_session
 from .teacher import install as install_teacher
@@ -255,6 +256,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # iPad pairing (tunnel token gate + GET /api/pairing) and the scripted demo (GET /api/demo/{stem})
     install_pairing(app, settings)
     install_demo(app, settings)
+    # screen tutor: the overlay helper's /ws/screen/{sid} + localhost-only /api/screen dev routes (SCREEN-TUTOR.md)
+    install_screen(app, settings)
     install_teacher(app, settings)  # /teacher + /api/teacher/*: localhost/LAN only unless TEACHER_TOKEN
 
     # the built web app (apps/web/dist), if present

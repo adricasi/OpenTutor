@@ -1,4 +1,4 @@
-"""Checkers on the real real content: the drafted truth and the exact strings the tier-1 reader produced."""
+"""Checkers on real content: the drafted truth and the exact strings the tier-1 reader produced."""
 
 import json
 

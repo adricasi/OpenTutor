@@ -89,6 +89,7 @@ canvas.ink { position: absolute; inset: 0; width: 100%; height: 100%; touch-acti
 .popover p { margin: 4px 0 10px; line-height: 1.4; }
 .popover .ghost-text { font-family: Caveat, cursive; font-size: 26px; color: var(--tutor); }
 .popover .row { display: flex; flex-wrap: wrap; gap: 6px; }
+.popover.tiny { width: auto; padding: 8px 44px 8px 10px; }
 .close { position: absolute; right: 6px; top: 6px; min-height: 28px; padding: 0 8px; border: 0; font-size: 20px; background: transparent; }
 
 .panel { border-left: 1px solid var(--line); background: var(--bar); padding: 12px 14px; overflow: auto; font-size: 15px; -webkit-user-select: text; user-select: text; }

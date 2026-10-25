@@ -38,5 +38,7 @@ hub's Ollama OpenAI-compatible endpoint (`LOCAL_SERVER_MANAGED=false`,
     each README.
   - The shared Ollama endpoint is untested; the iPad tutor uses the first model Ollama lists.
   - CI: its checks need their own job (a workflow change, pending approval).
-- Follow-ups: test the shared endpoint on a Mac; add the CI job; decide whether the hub links
-  to the iPad tutor from its pages.
+- Follow-ups: test the shared endpoint on a Mac; add the CI job.
+- Resolved follow-up (REQ-021, T-029): the hub links to the iPad tutor at `/ipad` via
+  `OPENTUTOR_IPAD_URL` (a redirect only; without it `/ipad` explains how to connect it). The
+  join and subjects pages show the iPad entry; the services stay separate.

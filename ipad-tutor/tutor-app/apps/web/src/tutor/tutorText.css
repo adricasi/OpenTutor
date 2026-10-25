@@ -8,3 +8,15 @@
 .chip .tutor-math .katex { font-size: 1em; }
 /* the reference structure is pre-wrap: maths inside it is laid out by KaTeX, not by the whitespace */
 .panel .reference .tutor-math { white-space: normal; }
+/* The tutor's maths on the page (TutorLayer's HTML overlay over the canvas): formulas and LaTeX ghost ink, typeset in
+   the tutor's purple on a soft paper-coloured card so it reads over ink. Only the card takes pointer events. */
+.tutor-html { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.page-math { position: absolute; pointer-events: auto; cursor: pointer; white-space: nowrap; color: var(--tutor);
+  font: 20px/1.2 -apple-system, system-ui, sans-serif; padding: 3px 8px; min-height: 30px; box-sizing: border-box;
+  display: flex; align-items: center; background: rgba(255, 255, 255, .86); border: 1px solid rgba(91, 75, 219, .18);
+  border-radius: 8px; box-shadow: 0 1px 4px rgba(40, 30, 120, .08); -webkit-user-select: none; user-select: none;
+  touch-action: none; }
+.page-math .katex { font-size: 1.1em; line-height: 1.2; }
+.page-math-tex { display: inline-block; }
+.page-math.ghost-tex { transform: translateY(-50%); opacity: .78; border-style: dashed; }
+.page-math.ghost-tex.accepted { opacity: 1; border-style: solid; }

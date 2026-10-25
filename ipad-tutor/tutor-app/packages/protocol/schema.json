@@ -568,7 +568,8 @@
             "speak",
             "explain",
             "summary",
-            "retract"
+            "retract",
+            "formula"
           ],
           "type": "string"
         },

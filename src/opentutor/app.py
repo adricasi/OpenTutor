@@ -278,6 +278,13 @@ def create_app(settings: Settings | None = None, model: ModelClient | None = Non
             tutors=list(tutors.values()),
         )
 
+    @app.get("/ipad", response_class=HTMLResponse)
+    async def ipad(request: Request) -> Response:
+        """Send the student to the iPad tutor (REQ-021); it has its own names, so no session."""
+        if settings.ipad_url:
+            return RedirectResponse(settings.ipad_url, status_code=303)
+        return page(request, "ipad.html", section="iPad tutor", session=current(request))
+
     def tutor_or_404(tutor_id: str) -> Tutor:
         tutor = tutors.get(tutor_id)
         if tutor is None:

@@ -303,6 +303,15 @@ person). Everything else continues after the deadline.
     blocked or missing recognition falls back to the keyboard microphone, Listen shown without an
     offline voice and never uses an online one). Left: real phones.
 
+- [x] T-029: Open the iPad tutor from the hub
+  - Requirements: REQ-021, ADR-0008 (follow-up)
+  - Depends on: T-026
+  - Scope: `ipad_url` setting (`OPENTUTOR_IPAD_URL`, absolute http(s) only), `GET /ipad`
+    (303 to it, or a "not connected yet" page with operator steps), iPad entry on the join
+    and subjects pages, a start-up line, README and `.env.example`
+  - Done when: tests for AC-021.1 … AC-021.5 pass with the fake model.
+  - Status: Done in this PR. Left: a click-through from a real iPad to a running `ipad-tutor`.
+
 ## Coverage check
 | Requirement | Tasks |
 |---|---|
@@ -326,6 +335,7 @@ person). Everything else continues after the deadline.
 | REQ-018 | T-025 |
 | REQ-019 | T-027 |
 | REQ-020 | T-028 |
+| REQ-021 | T-029 |
 | NFR-001 | T-002, T-013, T-016 (pip-audit and gitleaks already run in CI) |
 | NFR-002 | T-007, T-016 |
 | NFR-003 | T-016 |

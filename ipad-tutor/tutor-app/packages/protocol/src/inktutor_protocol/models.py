@@ -92,7 +92,9 @@ class Anchor(_M):
     node_id: str | None = None
 
 
-FeedbackType = Literal["mark", "ghost", "hint", "question", "speak", "explain", "summary", "retract"]
+# "formula": a short LaTeX note the tutor writes beside a line while answering by voice (display only: never read
+# back as the student's work, never graded; retracted with the line like everything else)
+FeedbackType = Literal["mark", "ghost", "hint", "question", "speak", "explain", "summary", "retract", "formula"]
 Glyph = Literal["check", "cross", "question", "pin", "underline", "circle"]
 
 
@@ -443,7 +445,7 @@ ServerMessage = Annotated[
 ]
 
 
-# ================================================================ screen tutor (the Mac screen tutor; not part of this folder)
+# ================================================================ screen tutor (docs/SCREEN-TUTOR.md)
 # The macOS helper (apps/overlay) talks to /ws/screen/{id}, localhost only. Every screen-mode BBox and point is in
 # global display points, AX coordinates: origin at the top-left of the main display (the one with the menu bar),
 # y down. The helper converts to AppKit coordinates (bottom-left origin, y up) to draw.

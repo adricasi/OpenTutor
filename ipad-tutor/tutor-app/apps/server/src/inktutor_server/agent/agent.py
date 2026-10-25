@@ -18,9 +18,10 @@ import contextlib
 import io
 import itertools
 import logging
+import re
 import threading
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -69,6 +70,36 @@ _ids = itertools.count(1)
 
 def fid() -> str:
     return f"fb_{next(_ids):05d}"
+
+
+FORMULA_WAIT_S = 1.5  # after the spoken answer, how long the optional `write` line may take (speech is already on)
+FORMULA_MAX = 60  # characters of LaTeX (the prompt asks for ≤ 40)
+_DELIMS = (("$$", "$$"), ("$", "$"), ("\\(", "\\)"), ("\\[", "\\]"))
+_PROSE = re.compile(r"(?<![\\A-Za-z])[A-Za-z]{4,}")  # plain words, not \commands
+
+
+def formula_latex(raw: Any) -> str | None:
+    """A tutor `write` line's LaTeX, without math delimiters, or None if it is empty, too long or prose."""
+    s = " ".join(str(raw or "").split())
+    for a, b in _DELIMS:
+        if len(s) >= len(a) + len(b) and s.startswith(a) and s.endswith(b):
+            s = s[len(a) : len(s) - len(b)].strip()
+            break
+    s = s.replace("$", "").strip()
+    if not s or len(s) > FORMULA_MAX or len(_PROSE.findall(s)) >= 3:
+        return None
+    return s
+
+
+async def _next_write(stream: AsyncIterator[dict[str, Any]], wait_s: float) -> dict[str, Any] | None:
+    """The one object after the spoken answer, if it is a `write` and comes within `wait_s`."""
+    try:
+        async with asyncio.timeout(wait_s):
+            async for obj in stream:
+                return obj if obj.get("type") == "write" else None
+    except TimeoutError:
+        log.info("converse: no formula within %.1f s of the answer", wait_s)
+    return None
 
 
 @dataclass
@@ -655,7 +686,7 @@ class Agent:
         await self.emit(FeedbackMsg(feedback=ev, provider=provider, model=model, ms=ms))
 
     # ---------------------------------------------------------------- tier 2 calls (cloud → local fallback)
-    async def _ask_tutor(self, page: PageState, kind: str, ctx: Any) -> AsyncIterator[dict[str, Any]]:
+    async def _ask_tutor(self, page: PageState, kind: str, ctx: Any) -> AsyncGenerator[dict[str, Any], None]:
         """Stream a tutor call. If the session's cloud provider fails or declines, the same call goes to the
         local tutor (ARCHITECTURE §4: automatic local fallback); `self.answered_by` tells the badge who answered."""
         primary = self.tutor()
@@ -1128,7 +1159,7 @@ class Agent:
         self._warm_converse()
 
     def _warm_converse(self) -> None:
-        """Prefill the answer's prompt while the student is still talking (local tutor only;)."""
+        """Prefill the answer's prompt while the student is still talking (local tutor only)."""
         tutor = self.tutor()
         page, ls = self._voice_page(self.voice.pen if self.voice else None)
         if tutor is None or not hasattr(tutor, "warm") or page is None or ls is None:
@@ -1200,10 +1231,15 @@ class Agent:
         ctx = self._voice_ctx(page, ls, text)
         # sentences are spoken as they stream in (`speak_partial`); the panel gets the whole answer at the end
         ev_id, said = fid(), ""
+        write: dict[str, Any] | None = None  # optional formula the tutor writes beside the line (after the speak)
         reply = self.voice.reply(ev_id, t_end, heard=text)
         t_ask = time.perf_counter()
+        stream = self._ask_tutor(page, "converse", ctx)
         try:
-            async for obj in self._ask_tutor(page, "converse", ctx):
+            async for obj in stream:
+                if obj.get("type") == "write" and write is None:
+                    write = obj  # out of order (before the speak): still the one formula of this answer
+                    continue
                 if obj.get("type") not in ("speak", "speak_partial") or not obj.get("text") or reply.cancelled:
                     continue
                 if not said:
@@ -1230,7 +1266,48 @@ class Agent:
                 source="tutor",
             )
             await self._send(page, ev, count_latency=False, speak=False)
+            if write is None and not reply.cancelled:  # one more line at most, briefly: it never delays speech
+                try:
+                    write = await _next_write(stream, FORMULA_WAIT_S)
+                except Exception as e:
+                    log.info("converse: formula line failed: %s", e)
+            if write is not None and not reply.cancelled:
+                await self._write_formula(page, ls, write)
+        with contextlib.suppress(Exception):
+            await stream.aclose()
         await reply.finish()
+
+    async def _write_formula(self, page: PageState, ls: LineState, obj: dict[str, Any]) -> FeedbackEvent | None:
+        """A tutor `write` line → a `formula` event beside the line (display only: never read, never graded).
+        One per line: a new one retracts the old. It goes with the line like every other event on it."""
+        latex = formula_latex(obj.get("latex") or obj.get("text"))
+        if latex is None:
+            log.info("converse: formula dropped (empty, too long or prose): %r", obj.get("latex"))
+            return None
+        target = page.lines.get(str(obj.get("line_id") or ""))
+        if target is None:  # unknown line → the line the student meant, if it is still on the page as it was
+            target = ls if page.lines.get(ls.region.id) is ls else None
+        if target is None:
+            return None
+        for f in list(target.feedback):
+            old = page.feedback.get(f)
+            if old is not None and old.type == "formula":
+                page.feedback.pop(f)
+                target.feedback.remove(f)
+                retract = FeedbackEvent(
+                    id=fid(), page_id=page.page.id, anchor=old.anchor, type="retract", refers_to=f, source="tutor"
+                )
+                await self._send(page, retract, count_latency=False)
+        ev = FeedbackEvent(
+            id=fid(),
+            page_id=page.page.id,
+            anchor=Anchor(line_id=target.region.id),
+            type="formula",
+            text=latex,
+            source="tutor",
+        )
+        await self._send(page, ev, count_latency=False, speak=False)
+        return ev
 
     async def on_session_update(self, msg: SessionUpdate) -> None:
         if msg.provider:

@@ -3,7 +3,10 @@
 A local-first tutor for work done by hand. The student writes on an iPad (Apple Pencil, Safari) or on the Mac; the
 tutor reads the handwriting, checks it with deterministic checkers, and marks the page like a teacher: small marks
 anchored to the strokes, hints on request (nudge → hint → corrected step → full solution only when asked), spoken
-answers to spoken questions, and a teacher view with homework links and a short progress summary per student.
+answers to spoken questions (with a short typeset formula beside the line when it helps), and a teacher view with
+homework links and a short progress summary per student. The same server also runs a **screen tutor** for software on
+the Mac: a small macOS helper (`tutor-app/apps/overlay`) highlights the next control in any app (Excel, Numbers, …),
+listens and talks, and moves on when the student has done the step. It points and never clicks for the student.
 Everything runs on one Apple-silicon Mac with open-weights models; a per-session toggle can send only the tutoring
 step to a cloud provider.
 
@@ -50,15 +53,22 @@ make ipad                        # build web, start server + HTTPS tunnel, print
 - `make demo` — replays a recorded session into the canvas so the tutor reacts live.
 - `/teacher` (on the Mac or LAN) — create homework, share the link/QR, see who did it and a 2–5 sentence summary.
 - `make test`, `make lint`, `make e2e` — server tests, web tests, browser tests (Playwright, Chromium).
+- `make overlay` — builds and runs the screen tutor's macOS helper (Swift, SwiftPM, ad-hoc signed; needs the Xcode
+  command-line tools). macOS asks once for Screen Recording, Accessibility and Microphone. `make overlay-test` runs
+  its self-check. The helper talks only to `127.0.0.1` (never through the tunnel), and screen mode never uses a cloud
+  provider.
 
 ## Layout
 
 ```
 tutor-app/
-  apps/server/      FastAPI: ink geometry, recognition (tier 1), checkers, agent, tutor (tier 2), voice, teacher view
-  apps/web/         React canvas (Pencil input, marks, hints, voice, teacher pages)
+  apps/server/      FastAPI: ink geometry, recognition (tier 1), checkers, agent, tutor (tier 2), voice, teacher view;
+                    screen/, ax/, guide/ for the screen tutor (helper socket, accessibility snapshots, guide loop)
+  apps/web/         React canvas (Pencil input, marks, hints, voice, KaTeX maths, teacher pages)
+  apps/overlay/     macOS helper for the screen tutor (Swift/AppKit: overlay, phantom icon, capture, voice)
   packages/protocol pydantic models → schema.json → TypeScript types (the one contract)
-  modes/            one folder per subject: math, consulting, system_design, language, accounting, sudoku
+  modes/            one folder per subject: math, consulting, system_design, language, accounting, sudoku, screen;
+                    apps/ holds step recipes for common software tasks (e.g. an Excel pivot table)
 ink-tutor/
   models/           manifest.toml (pinned models) + fetch.py
   fixtures/         recorded sessions + annotations used by the tests
@@ -73,3 +83,8 @@ checkers (sympy equivalence, debits = credits, sudoku rules, graph rules) decide
 explains, hints and speaks; it never overrides a checker. Voice: Silero VAD → Parakeet speech-to-text → the tutor →
 Kokoro text-to-speech, streamed sentence by sentence. The student's ink is never modified; the tutor draws on its own
 layer.
+
+Screen tutor: the helper sends accessibility snapshots (and a downscaled frame when needed) over `/ws/screen/{id}` →
+the guide loop plans the steps, finds each target by role and title, highlights it, and checks the step is done
+(a click on the highlighted control or the expected change on screen) → the next step, or a new plan if the student
+went elsewhere. Password managers are never captured (`SCREEN_BLOCKLIST`).

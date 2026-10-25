@@ -1,5 +1,5 @@
 # Ink Tutor app. Spec, fixtures and model weights live in ../ink-tutor.
-.PHONY: dev server web protocol test test-py test-web e2e lint models judge build sysmon demo pair ipad
+.PHONY: dev server web protocol test test-py test-web e2e lint models judge build sysmon demo pair ipad overlay overlay-build overlay-test
 SPEC := ../ink-tutor
 
 dev:             ## server (uvicorn --reload, :8000) + web (vite, :5173); the server manages the local model server
@@ -43,3 +43,22 @@ ipad: build      ## the usual way in: server + HTTPS tunnel + QR in one terminal
 pair:            ## HTTPS Cloudflare quick tunnel + QR for the iPad (Safari's mic needs HTTPS); next to make server
 	uv run python -m inktutor_server.pair $(ARGS)
 
+# ---- screen tutor: the macOS overlay helper (apps/overlay, Swift/AppKit, SwiftPM; docs/SCREEN-TUTOR.md)
+OVERLAY := apps/overlay
+OVERLAY_APP := $(OVERLAY)/.build/InkTutorOverlay.app
+# SwiftPM's caches and config stay inside the repo (no ~/Library/Caches/org.swift.swiftpm)
+SWIFTPM := --cache-path .build/swiftpm/cache --config-path .build/swiftpm/config --security-path .build/swiftpm/security
+SERVER ?= 127.0.0.1:8000
+SESSION ?= mac
+SWIFT_JOBS ?= 2
+overlay-build:   ## build the helper (release), wrap it in a .app (Info.plist: LSUIElement, mic text), sign it ad hoc
+	cd $(OVERLAY) && swift build -c release -j $(SWIFT_JOBS) --product inktutor-overlay $(SWIFTPM)
+	rm -rf $(OVERLAY_APP) && mkdir -p $(OVERLAY_APP)/Contents/MacOS
+	cp $(OVERLAY)/Info.plist $(OVERLAY_APP)/Contents/Info.plist
+	cp $(OVERLAY)/.build/release/inktutor-overlay $(OVERLAY_APP)/Contents/MacOS/inktutor-overlay
+	codesign --force --sign - --identifier dev.inktutor.overlay $(OVERLAY_APP)
+	@echo "built $(OVERLAY_APP)"
+overlay: overlay-build   ## build, sign and run the helper here (SERVER=127.0.0.1:8033 SESSION=mac ARGS="--log-ax --record DIR"); Ctrl-C quits
+	$(OVERLAY_APP)/Contents/MacOS/inktutor-overlay --server $(SERVER) --session $(SESSION) $(ARGS)
+overlay-test:    ## the helper's pure-logic self-check (coordinates, layout, overlay, status, AX walk, audio DSP, wire examples); no XCTest
+	cd $(OVERLAY) && swift run -j $(SWIFT_JOBS) $(SWIFTPM) overlay-selftest

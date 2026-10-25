@@ -171,6 +171,8 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"  Teacher view: http://127.0.0.1:{settings.port}/teacher  PIN {app.state.teacher.pin}\n"
     )
+    if settings.ipad_url:
+        print(f"  iPad tutor: {settings.ipad_url}\n")
     if settings.online_demo:
         start_online_demo(settings, app.state.demo_token)
     serve(app, settings.host, settings.port, settings.tunnel_port if settings.online_demo else None)

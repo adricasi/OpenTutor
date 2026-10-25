@@ -132,6 +132,10 @@ See the [architecture diagram](#architecture) above.
 - **Read aloud:** each tutor reply has a 🔊 button that reads it with the phone's own offline
   voice; if the phone has none, the button explains how to add one (online voices are never
   used).
+- **iPad tutor:** "On an iPad? Write with Apple Pencil" on the join page and the "Write on an
+  iPad" card on the subjects page open `/ipad`, which sends the student to the
+  [iPad handwriting tutor](#ipad-handwriting-tutor-ipad-tutor) when the operator has set
+  `OPENTUTOR_IPAD_URL`, and otherwise says it isn't connected yet.
 
 ## Run a hub (operator guide)
 Reference machine: Linux with NetworkManager, 64 GB RAM, a dedicated GPU, ~20 GB disk.
@@ -247,6 +251,17 @@ How the two fit together ([ADR-0008](docs/adr/0008-integrate-ipad-tutor-as-a-com
   tag you want it to use.
 - **Checks:** run its own from `ipad-tutor/tutor-app/` (`make test`, `make lint`); the root
   linters exclude `ipad-tutor/`.
+
+**Open it from the hub:** the hub's iPad button goes to `/ipad`, which redirects to the address
+in `OPENTUTOR_IPAD_URL` (or `ipad_url` in `opentutor.toml`; only absolute `http://` or
+`https://` URLs count). With both on one Mac, start the iPad tutor on :8000 (`make ipad`) and
+the hub on another port:
+```sh
+OPENTUTOR_IPAD_URL=http://<mac>.local:8000 uv run opentutor start --port 8100
+```
+`http://<mac>.local:8000` works on the LAN; the iPad's microphone (voice) needs HTTPS, so use
+the HTTPS link that `make ipad` prints instead. `opentutor start` prints the address it uses;
+without one, `/ipad` tells students to ask their teacher.
 
 ## Develop
 ```bash

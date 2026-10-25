@@ -77,11 +77,17 @@ export function Popover({ target, at, feedback, pageWidth, onHint, onDismiss, on
     .filter((f) => (f.type === "hint" || f.type === "explain") && ladderKey(f) === key)
     .sort((a, b) => (a.hint_level ?? 0) - (b.hint_level ?? 0));
   const level = Math.max(0, ...hints.map((h) => h.hint_level ?? 0));
-  const left = Math.min(Math.max(8, at.x - 150), pageWidth - 316);
+  const tiny = target.type === "formula";
+  const left = tiny ? Math.min(Math.max(8, at.x - 70), pageWidth - 150) : Math.min(Math.max(8, at.x - 150), pageWidth - 316);
   return (
-    <div className="popover" style={{ left, top: at.y + 18 }} role="dialog" data-feedback={target.id}>
+    <div className={`popover${tiny ? " tiny" : ""}`} style={{ left, top: at.y + (tiny ? 8 : 18) }} role="dialog" data-feedback={target.id}>
       <button className="close" aria-label="Close" onClick={onClose}>×</button>
-      {target.type === "ghost" ? (
+      {target.type === "formula" ? (
+        <div className="row">
+          {/* the tutor's typeset formula: all it offers is to go away (a `mark.dismiss`, like any mark) */}
+          <button className="secondary" onClick={onDismiss}>Dismiss</button>
+        </div>
+      ) : target.type === "ghost" ? (
         <>
           <div className="label">The tutor's suggestion</div>
           <p className="ghost-text"><TutorText text={target.text} /></p>

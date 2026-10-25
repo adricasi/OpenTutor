@@ -117,6 +117,7 @@ not versioned). Non-stream errors use RFC 9457 problem JSON.
 | `POST /api/messages` | Multipart: `intent` (`ask`, `new_exercise`, `hint`, `answer`, `check`, `practice`), `text` (optional), `image` (optional). Response: `application/x-ndjson` stream of events | 409 if a request is already in flight (AC-009.3) |
 | `GET /teacher` · `POST /teacher/login` · `GET /teacher/insights` | Teacher view, PIN login (separate cookie), aggregated JSON | REQ-013 |
 | `GET /healthz` | Liveness and model-runtime reachability | Loopback only |
+| `GET /ipad` | iPad tutor entry: 303 to `ipad_url` (`OPENTUTOR_IPAD_URL`, absolute http(s) only) when set, else a "not connected yet" page with operator steps. No session needed (the iPad tutor has its own names); not blocked on the tunnel listener, so it still passes the demo token gate there | REQ-021, ADR-0008 |
 
 **Stream events** (one JSON object per line), in order:
 `queued {position}` (repeated while waiting, at least every 5 s) → `started` →
@@ -297,6 +298,7 @@ Each acceptance criterion maps to at least one automated test named after its ID
 | D-11 | iPad handwriting tutor integrated as a companion service, not merged | [docs/adr/0008-integrate-ipad-tutor-as-a-companion-service.md](../adr/0008-integrate-ipad-tutor-as-a-companion-service.md) |
 | D-12 | Handwriting in the hub (REQ-019): a canvas writing pad sends the writing as an image; for answer checks the model first reads it into text (structured `HandwritingReading`), the text is shown to the student and checked as a typed attempt, so the maths checker decides Maths verdicts — the read → check → explain loop of `ipad-tutor/` without its MLX pipeline. Live marks (AC-019.6), ported from `ipad-tutor`'s pipeline (700 ms pen-up debounce, strokes grouped into lines, only changed lines read): the pad groups strokes by ruled line and posts intent `mark` with one slot per line (the text of lines already read, null for new or changed ones) and the new lines' crops stacked in one image. The server reads only the crops, with the reading prompt alone (no tutor prompt or history), fills the slots, runs the checker and returns one `marks` event aligned with the slots, without touching the conversation. Like `ipad-tutor`, it is a vision read of the line, not stroke recognition (its stroke-based `mathnote-ocr` is experimental) | — (design detail) |
 | D-13 | Speaking (REQ-020) uses the browser's speech recognition (Web Speech API) where the page may use it, else the phone keyboard's voice typing; the hub never receives audio. On-hub speech-to-text (e.g. a local Whisper model) is the follow-up for a fully offline path | — (design detail) |
+| D-14 | The hub links to the iPad tutor (REQ-021) with a plain redirect from `GET /ipad` to the operator-set `ipad_url`; nothing is proxied or shared, and the target comes only from configuration (never from the request), so `/ipad` is not an open redirect. Students reach it from the hub Wi-Fi at `http://<mac>.local:8000`, or at the HTTPS link `make ipad` prints, which the iPad microphone needs | [ADR-0008](../adr/0008-integrate-ipad-tutor-as-a-companion-service.md) |
 
 ## Open questions and risks
 - Q-1 (product.md): GPU model/VRAM → sets the default model (E4B, E2B or 26B-A4B) and `OLLAMA_NUM_PARALLEL`; settled by T-001.
@@ -346,6 +348,7 @@ which AC-004.6 forbids).
 | REQ-016 | Components (Hub CLI status line) · Reliability (Ollama stops) |
 | REQ-017 | Components (Online demo tunnel, Hub CLI) · Security design (access control, threats) · ADR-0006 |
 | REQ-018 | Components (Pages and client script) · D-10 |
+| REQ-021 | Interfaces (`/ipad`) · D-14 · ADR-0008 |
 | NFR-001 | Security design · Components (Web app, Model runtime) |
 | NFR-002 | Data model · Security design (Data protection) · ADR-0005 |
 | NFR-003 | Overview · Components (Pages) · Testing (Offline) |

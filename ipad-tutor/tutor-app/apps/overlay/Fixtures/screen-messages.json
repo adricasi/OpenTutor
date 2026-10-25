@@ -1,0 +1,487 @@
+{
+  "_doc": "Screen-tutor wire examples shared by both sides. `server`: exactly what the server sends (model_dump, nulls included); the helper must decode each one (overlay-selftest). `client`: what the helper sends (nil fields left out); the server must accept each one (tests/test_overlay_contract.py). Regenerate by hand if the protocol changes; the pytest says which entry drifted.",
+  "server": [
+    {
+      "type": "overlay",
+      "event": {
+        "id": "hl-insert",
+        "type": "highlight",
+        "bbox": {
+          "x": 318.0,
+          "y": 58.0,
+          "w": 52.0,
+          "h": 24.0
+        },
+        "from_point": null,
+        "text": null,
+        "step_id": "s1",
+        "ttl_ms": 8000,
+        "refers_to": null,
+        "state": null
+      },
+      "provider": "",
+      "model": ""
+    },
+    {
+      "type": "overlay",
+      "event": {
+        "id": "ar-insert",
+        "type": "arrow",
+        "bbox": {
+          "x": 318.0,
+          "y": 58.0,
+          "w": 52.0,
+          "h": 24.0
+        },
+        "from_point": {
+          "x": 900.0,
+          "y": 600.0
+        },
+        "text": null,
+        "step_id": "s1",
+        "ttl_ms": null,
+        "refers_to": null,
+        "state": null
+      },
+      "provider": "local",
+      "model": "gemma4-26b-a4b"
+    },
+    {
+      "type": "overlay",
+      "event": {
+        "id": "cap-insert",
+        "type": "caption",
+        "bbox": {
+          "x": 318.0,
+          "y": 58.0,
+          "w": 52.0,
+          "h": 24.0
+        },
+        "from_point": null,
+        "text": "Click Insert in the ribbon",
+        "step_id": "s1",
+        "ttl_ms": null,
+        "refers_to": null,
+        "state": null
+      },
+      "provider": "",
+      "model": ""
+    },
+    {
+      "type": "overlay",
+      "event": {
+        "id": "pulse-insert",
+        "type": "pulse",
+        "bbox": null,
+        "from_point": null,
+        "text": null,
+        "step_id": null,
+        "ttl_ms": 2400,
+        "refers_to": "hl-insert",
+        "state": null
+      },
+      "provider": "",
+      "model": ""
+    },
+    {
+      "type": "overlay",
+      "event": {
+        "id": "clr-1",
+        "type": "clear",
+        "bbox": null,
+        "from_point": null,
+        "text": null,
+        "step_id": null,
+        "ttl_ms": null,
+        "refers_to": "hl-insert",
+        "state": null
+      },
+      "provider": "",
+      "model": ""
+    },
+    {
+      "type": "overlay",
+      "event": {
+        "id": "clr-step",
+        "type": "clear",
+        "bbox": null,
+        "from_point": null,
+        "text": null,
+        "step_id": "s1",
+        "ttl_ms": null,
+        "refers_to": null,
+        "state": null
+      },
+      "provider": "",
+      "model": ""
+    },
+    {
+      "type": "overlay",
+      "event": {
+        "id": "clr-all",
+        "type": "clear",
+        "bbox": null,
+        "from_point": null,
+        "text": null,
+        "step_id": null,
+        "ttl_ms": null,
+        "refers_to": null,
+        "state": null
+      },
+      "provider": "",
+      "model": ""
+    },
+    {
+      "type": "overlay",
+      "event": {
+        "id": "ph-1",
+        "type": "phantom_state",
+        "bbox": null,
+        "from_point": null,
+        "text": null,
+        "step_id": null,
+        "ttl_ms": null,
+        "refers_to": null,
+        "state": "capture_paused"
+      },
+      "provider": "",
+      "model": ""
+    },
+    {
+      "type": "screen.config",
+      "blocklist": [
+        "1Password",
+        "Bitwarden",
+        "Keychain Access"
+      ],
+      "capture_fps": 1.0,
+      "allow_automation": false
+    },
+    {
+      "type": "guide.plan",
+      "plan": {
+        "goal": "make a pivot table of sales by region",
+        "app": "Microsoft Excel",
+        "steps": [
+          {
+            "id": "s1",
+            "n": 1,
+            "instruction": "Click Insertar in the ribbon",
+            "speak": "Click Insertar, up in the ribbon.",
+            "target": {
+              "ax_path": [
+                "AXWindow:Libro1",
+                "AXTabGroup:",
+                "AXRadioButton:Insertar"
+              ],
+              "title_regex": "^Insert(ar)?$",
+              "role": "AXRadioButton",
+              "description": "the Insert tab of the ribbon",
+              "bbox": null,
+              "source": null
+            },
+            "done_when": {
+              "kind": "ax_exists",
+              "args": {
+                "role": "AXButton",
+                "title_regex": "Tabla dinámica|PivotTable"
+              }
+            },
+            "hint_levels": [
+              "It's the second tab, next to Inicio.",
+              "Insert holds everything you add to a sheet."
+            ]
+          },
+          {
+            "id": "s2",
+            "n": 2,
+            "instruction": "Click Tabla dinámica",
+            "speak": "Now click Tabla dinámica.",
+            "target": {
+              "ax_path": null,
+              "title_regex": "Tabla dinámica|PivotTable",
+              "role": "AXButton",
+              "description": null,
+              "bbox": {
+                "x": 40.0,
+                "y": 120.0,
+                "w": 64.0,
+                "h": 60.0
+              },
+              "source": "ax"
+            },
+            "done_when": {
+              "kind": "window_title",
+              "args": {
+                "regex": "Crear tabla dinámica|Create PivotTable"
+              }
+            },
+            "hint_levels": []
+          },
+          {
+            "id": "s3",
+            "n": 3,
+            "instruction": "Press OK when you're ready",
+            "speak": "Press OK.",
+            "target": null,
+            "done_when": {
+              "kind": "user_next",
+              "args": {}
+            },
+            "hint_levels": []
+          }
+        ],
+        "version": 0
+      }
+    },
+    {
+      "type": "guide.status",
+      "phase": "planning",
+      "step": 0,
+      "of": 0,
+      "detail": "Got it — planning…"
+    },
+    {
+      "type": "guide.status",
+      "phase": "guiding",
+      "step": 2,
+      "of": 5,
+      "detail": "Click Insertar"
+    },
+    {
+      "type": "guide.status",
+      "phase": "verifying",
+      "step": 2,
+      "of": 5,
+      "detail": "Waiting for you to open the dialog…"
+    },
+    {
+      "type": "guide.status",
+      "phase": "done",
+      "step": 5,
+      "of": 5,
+      "detail": "Done!"
+    },
+    {
+      "type": "guide.status",
+      "phase": "error",
+      "step": 0,
+      "of": 0,
+      "detail": "The tutor model isn't loaded yet — start the app server with `make ipad`"
+    },
+    {
+      "type": "voice.transcript",
+      "text": "how do I make a pivot",
+      "final": false
+    },
+    {
+      "type": "voice.transcript",
+      "text": "How do I make a pivot table of sales by region?",
+      "final": true
+    },
+    {
+      "type": "voice.audio",
+      "pcm16_b64": "AAAAAP9/AID/fwCA",
+      "sample_rate": 24000,
+      "feedback_id": "cap-insert"
+    },
+    {
+      "type": "runtime",
+      "status": {
+        "available_gb": 4.2,
+        "level": "low",
+        "tier2_model": "gemma4-26b-a4b",
+        "tier2_mode": "offload",
+        "detail": "offload (9 GB expert cache)",
+        "event": "Memory low: tutor switched to slower mode",
+        "event_id": 3
+      }
+    },
+    {
+      "type": "error",
+      "message": "bad message: Field required"
+    }
+  ],
+  "client": [
+    {
+      "type": "screen.hello",
+      "helper": "inktutor-overlay 0.1.0",
+      "displays": [
+        {
+          "id": 1,
+          "frame": {
+            "x": 0.0,
+            "y": 0.0,
+            "w": 1512.0,
+            "h": 982.0
+          },
+          "scale": 2.0,
+          "main": true
+        },
+        {
+          "id": 2,
+          "frame": {
+            "x": -1920.0,
+            "y": -98.0,
+            "w": 1920.0,
+            "h": 1080.0
+          },
+          "scale": 1.0,
+          "main": false
+        }
+      ]
+    },
+    {
+      "type": "guide.goal",
+      "text": "make a pivot table of sales by region"
+    },
+    {
+      "type": "guide.control",
+      "action": "pause"
+    },
+    {
+      "type": "guide.control",
+      "action": "stop"
+    },
+    {
+      "type": "session.update",
+      "voice": true
+    },
+    {
+      "type": "session.update",
+      "voice": false
+    },
+    {
+      "type": "ax.snapshot",
+      "app": "Microsoft Excel",
+      "bundle_id": "com.microsoft.Excel",
+      "window_title": "Libro1",
+      "display": 1,
+      "elements": [
+        {
+          "id": "w",
+          "role": "AXWindow",
+          "title": "Libro1",
+          "frame": {
+            "x": 0,
+            "y": 25,
+            "w": 1512,
+            "h": 920
+          },
+          "enabled": true,
+          "path": [
+            "AXWindow:Libro1"
+          ]
+        },
+        {
+          "id": "w.0.2",
+          "role": "AXRadioButton",
+          "title": "Insertar",
+          "value": "0",
+          "frame": {
+            "x": 318,
+            "y": 58,
+            "w": 52,
+            "h": 24
+          },
+          "enabled": true,
+          "path": [
+            "AXWindow:Libro1",
+            "AXTabGroup:",
+            "AXRadioButton:Insertar"
+          ]
+        },
+        {
+          "id": "w.1",
+          "role": "AXTextField",
+          "frame": {
+            "x": 100,
+            "y": 140,
+            "w": 300,
+            "h": 22
+          },
+          "enabled": false,
+          "path": [
+            "AXWindow:Libro1",
+            "AXTextField:"
+          ]
+        }
+      ],
+      "focused_id": "w.0.2",
+      "secure_field_focused": false,
+      "pointer": {
+        "x": 900,
+        "y": 600
+      },
+      "t_ms": 1761300000123.5
+    },
+    {
+      "type": "ax.snapshot",
+      "app": "Safari",
+      "bundle_id": "com.apple.Safari",
+      "window_title": "",
+      "display": 1,
+      "elements": [],
+      "secure_field_focused": true,
+      "t_ms": 1761300001000
+    },
+    {
+      "type": "screen.frame",
+      "id": "f12",
+      "display": 1,
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
+      "width": 1280,
+      "height": 831,
+      "scale": 0.8465608465608465,
+      "jpeg_b64": "/9j/4AAQSkZJRgABAQ==",
+      "window": {
+        "x": 0,
+        "y": 25,
+        "w": 1512,
+        "h": 920
+      },
+      "t_ms": 1761300000200,
+      "trigger": "click"
+    },
+    {
+      "type": "screen.frame",
+      "id": "f13",
+      "display": 1,
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
+      "width": 1280,
+      "height": 831,
+      "scale": 0.8465608465608465,
+      "jpeg_b64": "/9j/4AAQSkZJRgABAQ==",
+      "t_ms": 1761300001200,
+      "trigger": "tick"
+    },
+    {
+      "type": "input.event",
+      "kind": "click",
+      "t_ms": 1761300000100,
+      "at": {
+        "x": 344,
+        "y": 70
+      }
+    },
+    {
+      "type": "input.event",
+      "kind": "key",
+      "t_ms": 1761300000500
+    },
+    {
+      "type": "voice.audio",
+      "pcm16_b64": "AAAAQP9/AYAAwA==",
+      "sample_rate": 16000
+    },
+    {
+      "type": "voice.stop"
+    }
+  ]
+}
